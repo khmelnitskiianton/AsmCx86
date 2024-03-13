@@ -1,0 +1,20 @@
+     1                                  ;Function of HelloWorld
+     2                                  
+     3                                  section .data
+     4                                              
+     5 00000000 48656C6C6F20576F72-     Msg:        db "Hello World!", 0x0a
+     5 00000009 6C64210A           
+     6                                  MsgLen      equ $ - Msg
+     7                                  
+     8                                  section .text
+     9                                  
+    10                                  global HelloWorld
+    11                                  
+    12                                  HelloWorld:
+    13 00000000 B801000000                      mov rax, 0x01      ; write64 (rdi, rsi, rdx)
+    14 00000005 BF01000000                      mov rdi, 1         ; stdout
+    15 0000000A 48BE-                           mov rsi, Msg
+    15 0000000C [0000000000000000] 
+    16 00000014 BA0D000000                      mov rdx, MsgLen    ; strlen (Msg)
+    17 00000019 0F05                            syscall
+    18 0000001B C3                              ret

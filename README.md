@@ -38,6 +38,8 @@ GCC - to link all files with option `-no-pie`
 
 ## Makefile
 
+[```Makefile```](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Makefile)
+
 Need folders `./bin` `./obj` `./src_asm` `./src_c` in current directory with makefile
 
 *Commands*:
