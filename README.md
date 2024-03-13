@@ -45,3 +45,10 @@ Need folders `./bin` `./obj` `./src_asm` `./src_c` in current directory with mak
 *Commands*:
 `make`
 `make clean`
+
+## Links
+
++ [Call Convention](https://en.wikipedia.org/wiki/X86_calling_conventions)
++ [NASM Guide](https://metanit.com/assembler/nasm/7.1.php)
++ [Best Compiler](https://godbolt.org/)
++ [Linux Syscall](https://syscalls.mebeim.net/?table=x86/64/x64/v6.5)

@@ -1,0 +1,80 @@
+     1                                  ;Function of Summ with args and ret arg
+     2                                  ;Convention
+     3                                  ;RSP, RBP, RBX, R12, R13, R14, R15 - nonvalotile save in stack by called function
+     4                                  ;RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11 - valotile save by code which calls
+     5                                  ;ABI GCC:       ;r9d - first 6 arguments in registers, than stack
+     6                                                  ;r8d
+     7                                                  ;ecx
+     8                                                  ;edx
+     9                                                  ;esi
+    10                                                  ;edi 
+    11                                  ;Convention Syscall:
+    12                                                  ;rdi - args for syscall
+    13                                                  ;rsi
+    14                                                  ;rdx
+    15                                                  ;r10
+    16                                                  ;r8
+    17                                                  ;r9
+    18                                  
+    19                                  CH_PERCENT equ 0x26 ;'%' in hex by ascii
+    20                                  
+    21                                  section .text
+    22                                  
+    23                                  global Printf32
+    24                                  global print_char
+    25                                  
+    26                                  ;--------------------------FUNCTIONS---------------------------
+    27                                  ;print_char(int a) - function of write one char symbol in stdout
+    28                                  ;Args: ABI - argument in rdi
+    29                                  ;Ret: void
+    30                                  ;Change: rdi, rax, rsi, rdx
+    31                                  print_char:
+    32 00000000 57                              push rdi
+    33 00000001 B801000000                      mov rax, 0x01      ; syscall 0x01: write(rdi, rsi, rdx) - (int, char*, size_t)
+    34 00000006 BF01000000                      mov rdi, 1         ; stdout
+    35 0000000B 4889E6                          mov rsi, rsp       ; address of str - in stack last char
+    36 0000000E BA01000000                      mov rdx, 1         ; length = 1 (one char)
+    37 00000013 0F05                            syscall
+    38 00000015 5F                              pop rdi
+    39 00000016 C3                              ret
+    40                                  ;---------------------------------------------------------------
+    41                                  ;print_string(char* buffer) - function prints string from buffer
+    42                                  ;Args: ABI - argument in rdi
+    43                                  ;Ret: void
+    44                                  ;Change: rbx, rdi
+    45                                  Printf32:
+    46                                          ;while(*ch != '\0') {print_char(*ch)}
+    47 00000017 57                              push rdi
+    48 00000018 4889FB                          mov rbx, rdi   ;rbx - address on buffer
+    49                                  while_start:
+    50 0000001B 803B00                          cmp byte [rbx], 0    ; *ch != '\0'
+    51 0000001E 7425                            je while_end
+    52                                          ;check for % - format string
+    53                                  if_start:
+    54 00000020 803B25                          cmp byte [rbx], '%'
+    55 00000023 750A                            jne if_else
+    56 00000025 48FFC3                          inc rbx         ;set arg of % 
+    57                                          ;1) %%
+    58 00000028 803B25                          cmp byte [rbx], '%'
+    59 0000002B 7402                            je if_else     ;just print symbol in else
+    60                                  
+    61 0000002D EB11                            jmp if_end
+    62                                  if_else:
+    63                                          ;if simple symbol just out
+    64 0000002F 4831FF                          xor rdi, rdi         ;set rdi = 0
+    65 00000032 408A3B                          mov dil, byte [rbx]  ;mov rdi(dil = 1 byte), [rbx] 
+    66 00000035 50                              push rax        ;save regs of syscall
+    67 00000036 56                              push rsi
+    68 00000037 52                              push rdx
+    69 00000038 E8C3FFFFFF                      call print_char ;call print current char
+    70 0000003D 5A                              pop rdx         ;revive regs
+    71 0000003E 5E                              pop rsi
+    72 0000003F 58                              pop rax         
+    73                                          ;set next symbol
+    74                                  if_end:
+    75 00000040 48FFC3                          inc rbx
+    76 00000043 EBD6                            jmp while_start
+    77                                  while_end:
+    78 00000045 5F                              pop rdi
+    79 00000046 C3                              ret
+    80                                  ;----------------------------------------------------------------

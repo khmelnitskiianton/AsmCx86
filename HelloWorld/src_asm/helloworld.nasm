@@ -7,7 +7,7 @@ MsgLen      equ $ - Msg                 ;$ - current address, <$-Msg> - has valu
 
 section .text           ;Section of text
 
-global HelloWorld       ;Set function HelloWorld global, 
+global HelloWorld       ;Set function HelloWorld global 
 
 HelloWorld:
         mov rax, 0x01      ; write64 (rdi, rsi, rdx)
