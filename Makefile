@@ -21,7 +21,7 @@ $(OBJ)/%.o : $(SRC_ASM)/%$(SRC_ASM_EXT)			#Assemble with NASM -f elf64
 	nasm -f elf64 -l $@.lst $< -o $@
 
 $(OBJ)/%.o : $(SRC_C)/%$(SRC_C_EXT)				#Object with GCC use -O3
-	gcc -O3 -c -o $@ $<
+	gcc -O0 -c -o $@ $<
 
 .PHONY: clean
 clean:
