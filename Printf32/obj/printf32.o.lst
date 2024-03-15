@@ -12,33 +12,34 @@
     12                              <1> _stack_offset   equ 8
     13                              <1> SUCCESS_RET     equ 1
     14                              <1> FAIL_RET        equ 0
-    15                              <1> ;========================================================================================
-    16                              <1> ;TWO DEFINES OF WRITING "0x""0o""0b" IN PREFIXIES OF DIFFRENT NUMBER SYSTEMS
-    17                              <1> %define HEX_PREFIX 1
-    18                              <1> %define OCT_PREFIX 1
-    19                              <1> %define BIN_PREFIX 1
-    20                              <1> %define ADDR_PREFIX 1
-    21                              <1> ;========================================================================================
-    22                              <1> ;Convention Function
-    23                              <1> ;RSP, RBP, RBX, R12, R13, R14, R15 - nonvalotile save in stack by called function
-    24                              <1> ;RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11, - valotile save by code which calls
-    25                              <1> ;ABI GCC:       ;r9d - first 6 arguments in registers, than stack
-    26                              <1>                 ;r8d
-    27                              <1>                 ;ecx
-    28                              <1>                 ;edx
-    29                              <1>                 ;esi
-    30                              <1>                 ;edi
-    31                              <1>                 ;rax - return reg 
-    32                              <1> ;Convention Syscall:
-    33                              <1>                 ;rcx
-    34                              <1>                 ;rdi - args for syscall
-    35                              <1>                 ;rsi
-    36                              <1>                 ;rdx
-    37                              <1>                 ;r11
-    38                              <1>                 ;r10
-    39                              <1>                 ;r8
-    40                              <1>                 ;r9
-    41                              <1> ;========================================================================================
+    15                              <1> SIGNED_MASK     equ 0x8000000000000000
+    16                              <1> ;========================================================================================
+    17                              <1> ;TWO DEFINES OF WRITING "0x""0o""0b" IN PREFIXIES OF DIFFRENT NUMBER SYSTEMS
+    18                              <1> %define HEX_PREFIX 1
+    19                              <1> %define OCT_PREFIX 1
+    20                              <1> %define BIN_PREFIX 1
+    21                              <1> %define ADDR_PREFIX 1
+    22                              <1> ;========================================================================================
+    23                              <1> ;Convention Function
+    24                              <1> ;RSP, RBP, RBX, R12, R13, R14, R15 - nonvalotile save in stack by called function
+    25                              <1> ;RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11, - valotile save by code which calls
+    26                              <1> ;ABI GCC:       ;r9d - first 6 arguments in registers, than stack
+    27                              <1>                 ;r8d
+    28                              <1>                 ;ecx
+    29                              <1>                 ;edx
+    30                              <1>                 ;esi
+    31                              <1>                 ;edi
+    32                              <1>                 ;rax - return reg 
+    33                              <1> ;Convention Syscall:
+    34                              <1>                 ;rcx
+    35                              <1>                 ;rdi - args for syscall
+    36                              <1>                 ;rsi
+    37                              <1>                 ;rdx
+    38                              <1>                 ;r11
+    39                              <1>                 ;r10
+    40                              <1>                 ;r8
+    41                              <1>                 ;r9
+    42                              <1> ;========================================================================================
      6                                    
      7                                  global Printf32
      8                                  
@@ -291,7 +292,7 @@
    254 0000016C 4899                            cqo             ;expand rax to rdx:rax for dividing
    255 0000016E 49F7F0                          div r8       
    256 00000171 4D31C9                          xor r9, r9
-   257 00000174 448A8A[EB030000]                mov r9b, dec_str[rdx]
+   257 00000174 448A8A[EA030000]                mov r9b, dec_str[rdx]
    258 0000017B 4151                            push r9
    259 0000017D 48FFC1                          inc rcx         ;inc rcx
    260 00000180 4883F800                        cmp rax, 0
@@ -334,7 +335,7 @@
    297 000001AF 4899                            cqo             ;expand rax to rdx:rax for dividing
    298 000001B1 49F7F0                          div r8       
    299 000001B4 4D31C9                          xor r9, r9
-   300 000001B7 448A8A[EB030000]                mov r9b, dec_str[rdx]
+   300 000001B7 448A8A[EA030000]                mov r9b, dec_str[rdx]
    301 000001BE 4151                            push r9
    302 000001C0 48FFC1                          inc rcx         ;inc rcx
    303 000001C3 4883F800                        cmp rax, 0
@@ -385,7 +386,7 @@
    348 00000206 6689C2                          mov dx, ax      ;in dx - digit
    349 00000209 6683E20F                        and dx, 15      
    350 0000020D 4D31C0                          xor r8, r8
-   351 00000210 448A82[EB030000]                mov r8b, dec_str[rdx]
+   351 00000210 448A82[04040000]                mov r8b, hex_str_small[rdx]
    352 00000217 4150                            push r8
    353 00000219 48C1E804                        shr rax, 4      ;dividing on 16
    354 0000021D 48FFC1                          inc rcx         ;inc rcx
@@ -541,7 +542,7 @@
    504 0000031B 6689C2                          mov dx, ax      ;in dx - digit
    505 0000031E 6683E20F                        and dx, 15      
    506 00000322 4D31C0                          xor r8, r8
-   507 00000325 448A82[05040000]                mov r8b, hex_str_small[rdx]
+   507 00000325 448A82[04040000]                mov r8b, hex_str_small[rdx]
    508 0000032C 4150                            push r8  ; push digit symbol
    509 0000032E 48C1E804                        shr rax, 4      ;dividing on 16
    510 00000332 4883F900                        cmp rcx, 0
@@ -598,13 +599,13 @@
    556                                  section .rodata
    557                                  ;const alphabets for number systems
    558 000003E0 3031                    bin_str:        db "01"
-   559 000003E2 303132333435343637      oct_str:        db "012345467"
-   560 000003EB 303132333435363738-     dec_str         db "0123456789"
-   560 000003F4 39                 
-   561 000003F5 303132333435363738-     hex_str_big:    db "0123456789ABCDEF"
-   561 000003FE 39414243444546     
-   562 00000405 303132333435363738-     hex_str_small:  db "0123456789abcdef"
-   562 0000040E 39616263646566     
+   559 000003E2 3031323334353637        oct_str:        db "01234567"
+   560 000003EA 303132333435363738-     dec_str         db "0123456789"
+   560 000003F3 39                 
+   561 000003F4 303132333435363738-     hex_str_big:    db "0123456789ABCDEF"
+   561 000003FD 39414243444546     
+   562 00000404 303132333435363738-     hex_str_small:  db "0123456789abcdef"
+   562 0000040D 39616263646566     
    563                                  
    564                                  section .data
    565                                  ;buffer for write

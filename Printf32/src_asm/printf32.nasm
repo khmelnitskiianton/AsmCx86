@@ -348,7 +348,7 @@ print_hex:
         mov dx, ax      ;in dx - digit
         and dx, 15      
         xor r8, r8
-        mov r8b, dec_str[rdx]
+        mov r8b, hex_str_small[rdx]
         push r8
         shr rax, 4      ;dividing on 16
         inc rcx         ;inc rcx
@@ -556,7 +556,7 @@ jump_table_of_printf:
 section .rodata
 ;const alphabets for number systems
 bin_str:        db "01"
-oct_str:        db "012345467"
+oct_str:        db "01234567"
 dec_str         db "0123456789"
 hex_str_big:    db "0123456789ABCDEF"
 hex_str_small:  db "0123456789abcdef"

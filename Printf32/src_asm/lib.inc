@@ -7,6 +7,7 @@ _format_str     equ 16+48   ;16, 48 - 6 regs by convension i push
 _stack_offset   equ 8
 SUCCESS_RET     equ 1
 FAIL_RET        equ 0
+SIGNED_MASK     equ 0x8000000000000000
 ;========================================================================================
 ;TWO DEFINES OF WRITING "0x""0o""0b" IN PREFIXIES OF DIFFRENT NUMBER SYSTEMS
 %define HEX_PREFIX 1
