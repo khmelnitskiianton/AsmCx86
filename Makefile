@@ -1,5 +1,5 @@
 SRC_ASM_EXT = .nasm
-SRC_C_EXT 	= .cpp
+SRC_C_EXT   = .cpp
 
 SRC_ASM = ./src_asm
 SRC_C   = ./src_c
@@ -9,10 +9,10 @@ OUT     = $(BIN)
 NAME	= /program
 
 SOURCES_ASM 	= $(wildcard $(SRC_ASM)/*$(SRC_ASM_EXT))
-SOURCES_C		= $(wildcard $(SRC_C)/*$(SRC_C_EXT))
+SOURCES_C	= $(wildcard $(SRC_C)/*$(SRC_C_EXT))
 
 OBJFILES_ASM    = $(patsubst $(SRC_ASM)/%,$(OBJ)/%,$(SOURCES_ASM:$(SRC_ASM_EXT)=.o))
-OBJFILES_C		= $(patsubst $(SRC_C)/%,$(OBJ)/%,$(SOURCES_C:$(SRC_C_EXT)=.o))
+OBJFILES_C	= $(patsubst $(SRC_C)/%,$(OBJ)/%,$(SOURCES_C:$(SRC_C_EXT)=.o))
 
 $(OUT)$(NAME): $(OBJFILES_ASM) $(OBJFILES_C)	#Linking with GCC use -no-pie
 	gcc $^ -o $@ -no-pie					
