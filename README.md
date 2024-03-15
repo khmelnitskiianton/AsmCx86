@@ -1,3 +1,49 @@
+# AsmCx86
+
+Programs on NASM+C on Linux x86-64
+
+## Printf
+
+Simple version of printf() on NASM on Linux x86-64:
+
+[```Printf32.nasm```]((https://github.com/khmelnitskiianton/AsmCx86/blob/main/Printf32/src_asm/printf32.nasm))
+
+[```lib.inc```]((https://github.com/khmelnitskiianton/AsmCx86/blob/main/Printf32/src_asm/lib.ink))
+
+*Specifiers*:
+
++ `%c` - char symbol
++ `%s` - string
++ `%d` - signed integer number(32-byte)
++ `%u` - unsigned integer number(64-byte)
++ `%o` - octal integer number(64-byte)
++ `%x` - hexiamal integer number(64-byte)
++ `%b` - binary integer number(64-byte)
++ `%p` - pointer address in hex(64-byte)
++ `%n` - writes in address the number of characters outputted so far
+
+*Return:*
++ `1` if success
++ `0` if fail or error
+
+*Examples:*
+
+```cpp
+int a = Printf32("%o\n%d %s %x %d%%%c%b\n%d %s %x %d%%%c%b", -1, -1, "love", 3802, 100, 33, 127,
+                                                                 -1, "love", 3802, 100, 33, 127);
+Output:
+0o36666666666
+-1 love 0x430 100%!0b1111111
+-1 love 0x430 100%!0b1111111
+```cpp
+int b = 1;
+Printf32("abba%n-best\n", &b);
+Printf32("%d\n", b);
+Output:
+abba-best
+4
+```
+
 ## My programs
 
 GCC - to compile into an obj file

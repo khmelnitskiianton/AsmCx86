@@ -1,199 +1,611 @@
      1                                  ;========================================================================================
-     2                                  ;                               MAIN NASM FOR PRINTF32
+     2                                  ;                               MAIN NASM FOR PRINTF32                                  |
      3                                  ;========================================================================================
      4                                  
      5                                  %include "./src_asm/lib.inc"
      6                              <1> ;========================================================================================
-     7                              <1> ;                              LIB FOR MACROSES & DEFINE & CONVENTION
+     7                              <1> ;                              LIB FOR MACROSES & DEFINE & CONVENTION                   |
      8                              <1> ;========================================================================================
      9                              <1> SYSCALL_WRITE   equ 0x01
-    10                              <1> _format_str     equ 16
-    11                              <1> _stack_offset   equ 8
-    12                              <1> ;========================================================================================
-    13                              <1> ;TWO DEFINES OF WRITING "0x""0o""0b" IN PREFIXIES OF DIFFRENT NUMBER SYSTEMS
-    14                              <1> %define HEX_PREFIX 1
-    15                              <1> %define OCT_PREFIX 1
-    16                              <1> %define BIN_PREFIX 1
-    17                              <1> %define ADDR_PREFIX 1
-    18                              <1> ;========================================================================================
-    19                              <1> ;Convention Function
-    20                              <1> ;RSP, RBP, RBX, R12, R13, R14, R15 - nonvalotile save in stack by called function
-    21                              <1> ;RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11, - valotile save by code which calls
-    22                              <1> ;ABI GCC:       ;r9d - first 6 arguments in registers, than stack
-    23                              <1>                 ;r8d
-    24                              <1>                 ;ecx
-    25                              <1>                 ;edx
-    26                              <1>                 ;esi
-    27                              <1>                 ;edi 
-    28                              <1> ;Convention Syscall:
-    29                              <1>                 ;rcx
-    30                              <1>                 ;rdi - args for syscall
-    31                              <1>                 ;rsi
-    32                              <1>                 ;rdx
-    33                              <1>                 ;r11
-    34                              <1>                 ;r10
-    35                              <1>                 ;r8
-    36                              <1>                 ;r9
-    37                              <1> ;========================================================================================
-     6                                  
+    10                              <1> SIZE_BUFFER     equ 10
+    11                              <1> _format_str     equ 16+48   ;16, 48 - 6 regs by convension i push
+    12                              <1> _stack_offset   equ 8
+    13                              <1> SUCCESS_RET     equ 1
+    14                              <1> FAIL_RET        equ 0
+    15                              <1> ;========================================================================================
+    16                              <1> ;TWO DEFINES OF WRITING "0x""0o""0b" IN PREFIXIES OF DIFFRENT NUMBER SYSTEMS
+    17                              <1> %define HEX_PREFIX 1
+    18                              <1> %define OCT_PREFIX 1
+    19                              <1> %define BIN_PREFIX 1
+    20                              <1> %define ADDR_PREFIX 1
+    21                              <1> ;========================================================================================
+    22                              <1> ;Convention Function
+    23                              <1> ;RSP, RBP, RBX, R12, R13, R14, R15 - nonvalotile save in stack by called function
+    24                              <1> ;RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11, - valotile save by code which calls
+    25                              <1> ;ABI GCC:       ;r9d - first 6 arguments in registers, than stack
+    26                              <1>                 ;r8d
+    27                              <1>                 ;ecx
+    28                              <1>                 ;edx
+    29                              <1>                 ;esi
+    30                              <1>                 ;edi
+    31                              <1>                 ;rax - return reg 
+    32                              <1> ;Convention Syscall:
+    33                              <1>                 ;rcx
+    34                              <1>                 ;rdi - args for syscall
+    35                              <1>                 ;rsi
+    36                              <1>                 ;rdx
+    37                              <1>                 ;r11
+    38                              <1>                 ;r10
+    39                              <1>                 ;r8
+    40                              <1>                 ;r9
+    41                              <1> ;========================================================================================
+     6                                    
      7                                  global Printf32
      8                                  
-     9                                  extern print_char
-    10                                  extern print_str
-    11                                  extern print_dec_sign
-    12                                  extern print_dec_unsign
-    13                                  extern print_hex
-    14                                  extern print_oct
-    15                                  extern print_bin
-    16                                  extern print_addr
-    17                                  
-    18                                  section .text
-    19                                  
-    20                                  ;=========================================FUNCTIONS======================================
-    21                                  ;Printf32(...) - function supporting because of ABI
-    22                                  ;DON'T CHANGE R10
-    23                                  
-    24                                  Printf32: 
-    25 00000000 90                              nop
-    26                                                  
-    27 00000001 415A                            pop  r10        ; pop in r11 address of call
-    28                                          
-    29 00000003 4151                            push r9         ; save all regs in stack
-    30 00000005 4150                            push r8         ; now i have all args in stack
-    31 00000007 51                              push rcx
-    32 00000008 52                              push rdx
-    33 00000009 56                              push rsi
-    34 0000000A 57                              push rdi
+     9                                  section .text
+    10                                  
+    11                                  ;========================================MAIN=FUNCTION===================================
+    12                                  ;Printf32(...) - function supporting because of ABI
+    13                                  ;DON'T CHANGE R10, R11, 
+    14                                  
+    15                                  Printf32: 
+    16 00000000 90                              nop
+    17                                                  
+    18 00000001 415A                            pop  r10        ; pop in r10 address of call
+    19                                          
+    20 00000003 4151                            push r9         ; save all regs in stack
+    21 00000005 4150                            push r8         ; now i have all args in stack
+    22 00000007 51                              push rcx
+    23 00000008 52                              push rdx
+    24 00000009 56                              push rsi
+    25 0000000A 57                              push rdi
+    26                                          
+    27 0000000B 55                              push rbp        ;save regs by convention
+    28 0000000C 53                              push rbx 
+    29 0000000D 4154                            push r12 
+    30 0000000F 4155                            push r13 
+    31 00000011 4156                            push r14 
+    32 00000013 4157                            push r15
+    33                                  
+    34 00000015 E815000000                      call printf_32  ;call main printf_32
     35                                          
-    36 0000000B E80B000000                      call printf_32  ;call main printf_32
-    37                                          
-    38 00000010 5F                              pop rdi         ;revive all args
-    39 00000011 5E                              pop rsi
-    40 00000012 5A                              pop rdx
-    41 00000013 59                              pop rcx
-    42 00000014 4158                            pop r8
-    43 00000016 4159                            pop r9
-    44                                  
-    45 00000018 4152                            push r10        ;put in stack address of return from Printf32
-    46 0000001A C3                              ret
-    47                                  ;----------------------------------------------------------------------------------------
-    48                                  ;printf_32(char* buffer, ...) - function prints string from buffer
-    49                                  ;Args: ABI - arguments in stack
-    50                                  ;Ret: void
-    51                                  ;Change: rbx, rdi, rcx, r12
-    52                                  
-    53                                  printf_32:
-    54 0000001B 90                              nop
-    55                                          ;input action
-    56 0000001C 55                              push rbp        ; save rbp
-    57 0000001D 4889E5                          mov rbp, rsp    ; new rbp = rsp
-    58                                          ;sub rsp,n      ;local vars
-    59                                          ;-------------------------------
-    60 00000020 53                              push rbx
-    61 00000021 4989EC                          mov r12, rbp                            ;r12 - current argument of printf
-    62 00000024 4983C410                        add r12, _format_str
-    63 00000028 4983C408                        add r12, _stack_offset
-    64 0000002C 488B5D10                        mov rbx, qword [rbp+_format_str]        ;rbx - address on buffer
-    65 00000030 4831C9                          xor rcx, rcx                            ;counter of output args
-    66                                  .while_start:                                   ;while(*ch != '\0') {print_char(*ch)}
-    67 00000033 803B00                          cmp byte [rbx], 0    ; *ch != '\0'
-    68 00000036 0F84C1000000                    je .while_end
-    69                                          ;check for % - format string
-    70                                  .if_start:
-    71 0000003C 803B25                          cmp byte [rbx], '%'
-    72 0000003F 753E                            jne .if_else
-    73 00000041 48FFC3                          inc rbx         ;set arg of % 
-    74                                          ;check if last symbol was %
-    75 00000044 803B00                          cmp byte [rbx], 0    ; *ch != '\0'
-    76 00000047 0F84B0000000                    je .while_end
-    77                                          ;-------------------------------
-    78                                          ;cases:
-    79                                          ;1) %%
-    80 0000004D 803B25                          cmp byte [rbx], '%'
-    81 00000050 742D                            je .if_else     ;just print symbol in else
-    82                                          ;2) %c
-    83 00000052 803B63                          cmp byte [rbx], 'c'
-    84 00000055 7435                            je .case_char
-    85                                          ;3) %s
-    86 00000057 803B73                          cmp byte [rbx], 's'
-    87 0000005A 743B                            je .case_string
-    88                                          ;4.1) %d
-    89 0000005C 803B64                          cmp byte [rbx], 'd'
-    90 0000005F 7441                            je .case_decimal_signed
-    91                                          ;4.2) %u
-    92 00000061 803B75                          cmp byte [rbx], 'u'
-    93 00000064 7447                            je .case_decimal_unsigned
-    94                                          ;5) %x
-    95 00000066 803B78                          cmp byte [rbx], 'x'
-    96 00000069 744D                            je .case_hexadecimal
-    97                                          ;6) %o
-    98 0000006B 803B6F                          cmp byte [rbx], 'o'
-    99 0000006E 7453                            je .case_octal
-   100                                          ;6) %b
-   101 00000070 803B62                          cmp byte [rbx], 'b'
-   102 00000073 7459                            je .case_binary
-   103                                          ;7) %n
-   104 00000075 803B6E                          cmp byte [rbx], 'n'
-   105 00000078 745F                            je .case_count
-   106                                          ;7) %p
-   107 0000007A 803B70                          cmp byte [rbx], 'p'
-   108 0000007D 7464                            je .case_address
-   109                                  .if_else:
-   110                                          ;if simple symbol just out
-   111 0000007F 4831FF                          xor rdi, rdi         ;set rdi = 0
-   112 00000082 408A3B                          mov dil, byte [rbx]  ;mov rdi(dil = 1 byte), [rbx] 
-   113                                  
-   114 00000085 E8(00000000)                    call print_char ;call print current char
-   115                                  
-   116 0000008A EB69                            jmp .if_end
-   117                                  ;Tables of jumps for cases of %
-   118                                  .cases_of_jmps:
-   119                                  .case_char:
-   120 0000008C 498B3C24                        mov rdi, [r12]
-   121 00000090 E8(00000000)                    call print_char
-   122 00000095 EB57                            jmp .end_case
-   123                                  .case_string:
-   124 00000097 498B3C24                        mov rdi, [r12]
-   125 0000009B E8(00000000)                    call print_str
-   126 000000A0 EB4C                            jmp .end_case
-   127                                  .case_decimal_signed:
-   128 000000A2 498B3C24                        mov rdi, [r12]
-   129 000000A6 E8(00000000)                    call print_dec_sign
-   130 000000AB EB41                            jmp .end_case
-   131                                  .case_decimal_unsigned:
-   132 000000AD 498B3C24                        mov rdi, [r12]
-   133 000000B1 E8(00000000)                    call print_dec_unsign
-   134 000000B6 EB36                            jmp .end_case
-   135                                  .case_hexadecimal:
-   136 000000B8 498B3C24                        mov rdi, [r12]
-   137 000000BC E8(00000000)                    call print_hex
-   138 000000C1 EB2B                            jmp .end_case
-   139                                  .case_octal:
-   140 000000C3 498B3C24                        mov rdi, [r12]
-   141 000000C7 E8(00000000)                    call print_oct
-   142 000000CC EB20                            jmp .end_case
-   143                                  .case_binary:
-   144 000000CE 498B3C24                        mov rdi, [r12]
-   145 000000D2 E8(00000000)                    call print_bin
-   146 000000D7 EB15                            jmp .end_case
-   147                                  .case_count:
-   148 000000D9 4889CF                          mov rdi, rcx
-   149 000000DC E8(00000000)                    call print_dec_unsign
-   150 000000E1 EB0B                            jmp .end_case
-   151                                  .case_address:
-   152 000000E3 498B3C24                        mov rdi, [r12]
-   153 000000E7 E8(00000000)                    call print_addr
-   154 000000EC EB00                            jmp .end_case
-   155                                  .end_case:
-   156 000000EE 48FFC1                          inc rcx
-   157 000000F1 4983C408                        add r12, _stack_offset
-   158                                  .if_end:
-   159                                          ;set next symbol
-   160 000000F5 48FFC3                          inc rbx
-   161 000000F8 E936FFFFFF                      jmp .while_start
-   162                                  .while_end:
-   163 000000FD 5B                              pop rbx
-   164 000000FE C9                              leave           ;mov rsp, rbp ; free stack from local vars and all rubbish
-   165                                                          ;pop rbp      ; revive rbp
-   166 000000FF C3                              ret             ; return to last position
-   167                                  ;========================================================================================
+    36 0000001A 415F                            pop r15         ;revive regs
+    37 0000001C 415E                            pop r14
+    38 0000001E 415D                            pop r13
+    39 00000020 415C                            pop r12
+    40 00000022 5B                              pop rbx
+    41 00000023 5D                              pop rbp
+    42                                  
+    43 00000024 5F                              pop rdi         ;revive all args
+    44 00000025 5E                              pop rsi
+    45 00000026 5A                              pop rdx
+    46 00000027 59                              pop rcx
+    47 00000028 4158                            pop r8
+    48 0000002A 4159                            pop r9
+    49                                  
+    50 0000002C 4152                            push r10        ;put in stack address of return from Printf32
+    51 0000002E C3                              ret
+    52                                  ;----------------------------------------------------------------------------------------
+    53                                  ;printf_32(char* buffer, ...) - function prints string from buffer
+    54                                  ;Args: ABI - arguments in stack
+    55                                  ;Ret: void
+    56                                  ;Change: rbx, rdi, rcx, r12, r13, r14, r15
+    57                                  ;r8 & r9 dont use, table_of_junmps dont save them
+    58                                  printf_32:
+    59 0000002F 90                              nop
+    60                                          ;input action
+    61 00000030 55                              push rbp        ; save rbp
+    62 00000031 4889E5                          mov rbp, rsp    ; new rbp = rsp
+    63                                          ;sub rsp,n      ;local vars
+    64                                          ;-------------------------------
+    65 00000034 B800000000                      mov rax, FAIL_RET       ;default - before ending fail return
+    66 00000039 4D31DB                          xor r11, r11            ;clean r11
+    67 0000003C 4D31FF                          xor r15, r15
+    68 0000003F 4989EC                          mov r12, rbp            ;r12 - current argument of printf
+    69 00000042 4983C440                        add r12, _format_str
+    70 00000046 4983C408                        add r12, _stack_offset
+    71 0000004A 488B5D40                        mov rbx, qword [rbp+_format_str]        ;rbx - address on buffer
+    72 0000004E 4831C9                          xor rcx, rcx                            ;counter of output args
+    73                                  .while_start:                                   ;while(*ch != '\0') {print_char(*ch)}
+    74 00000051 803B00                          cmp byte [rbx], 0    ; *ch != '\0'
+    75 00000054 7455                            je .while_end
+    76                                          ;check for % - format string
+    77                                  .if_start:
+    78 00000056 803B25                          cmp byte [rbx], '%'
+    79 00000059 753E                            jne .if_else
+    80 0000005B 48FFC3                          inc rbx         ;set arg of % 
+    81                                          ;check if last symbol was %
+    82 0000005E 803B00                          cmp byte [rbx], 0    ; *ch != '\0'
+    83 00000061 745A                            je .error_return
+    84                                          ;-------------------------------
+    85                                          ;cases: 
+    86 00000063 4D31F6                          xor r14, r14
+    87 00000066 448A33                          mov r14b, byte [rbx]
+    88                                          ;1) %%
+    89 00000069 4180FE25                        cmp r14b, '%'
+    90 0000006D 742A                            je .if_else     ;just print symbol in else
+    91                                          ;2) %n
+    92 0000006F 4180FE6E                        cmp r14b, 'n'
+    93 00000073 750C                            jne .jmp_for_table
+    94 00000075 4D01DF                          add r15, r11
+    95 00000078 4D8B3424                        mov r14, [r12]
+    96 0000007C 45893E                          mov [r14], r15d ;put dword amount of symbols in &b 
+    97 0000007F EB0F                            jmp .return_place
+    98                                  .jmp_for_table:
+    99 00000081 498B3C24                        mov rdi, [r12]
+   100 00000085 4E8B2CF5[00000000]              mov r13, [r14*8 + jump_table_of_printf - 'b'*8] ;offset
+   101 0000008D 41FFE5                          jmp r13         ;jmp on function
+   102                                  .return_place:
+   103 00000090 48FFC1                          inc rcx
+   104 00000093 4983C408                        add r12, _stack_offset
+   105 00000097 EB0D                            jmp .if_end
+   106                                  .if_else:
+   107                                          ;if simple symbol just out
+   108 00000099 4831FF                          xor rdi, rdi         ;set rdi = 0
+   109 0000009C 408A3B                          mov dil, byte [rbx]  ;mov rdi(dil = 1 byte), [rbx] 
+   110 0000009F E84B000000                      call print_char
+   111                                  
+   112 000000A4 EB00                            jmp .if_end
+   113                                  .if_end:
+   114                                          ;set next symbol
+   115 000000A6 48FFC3                          inc rbx
+   116 000000A9 EBA6                            jmp .while_start
+   117                                  .while_end:
+   118                                  .if_buff_start: ;if(buffer not empty){write}
+   119 000000AB 4983FB00                        cmp r11, 0
+   120 000000AF 7405                            je .if_buff_end 
+   121 000000B1 E80E000000                      call write_buff
+   122                                  .if_buff_end:
+   123 000000B6 B801000000                      mov rax, SUCCESS_RET      ;rax - return value - success
+   124 000000BB EB05                            jmp .end_return
+   125                                  .error_return:
+   126 000000BD B800000000                      mov rax, FAIL_RET       ;default - before ending fail return
+   127                                  .end_return:
+   128 000000C2 C9                              leave           ;mov rsp, rbp ; free stack from local vars and all rubbish
+   129                                                          ;pop rbp      ; revive rbp
+   130 000000C3 C3                              ret             ; return to last position
+   131                                  ;========================================================================================
+   132                                  
+   133                                  ;WARNING: ALL FUNCTIONS CANT CHANGE R10 & R11 - RESERVED
+   134                                  ;R10 - address of return from printf
+   135                                  ;R11 - counter of buffer
+   136                                  
+   137                                  ;==================================HELP=FUNCTIONS========================================
+   138                                  ;write_buff() - function of write buffer in stdout
+   139                                  ;Args: ABI - r11 - global counter of buffer, "buffer_out" - buffer with string
+   140                                  ;Ret: void
+   141                                  ;Change: nothing
+   142                                  write_buff:
+   143 000000C4 4153                            push r11
+   144 000000C6 50                              push rax        ;save regs of syscall
+   145 000000C7 51                              push rcx
+   146 000000C8 56                              push rsi
+   147 000000C9 52                              push rdx
+   148 000000CA 57                              push rdi
+   149                                  
+   150 000000CB 4D01DF                          add r15, r11    ;global 
+   151                                  
+   152 000000CE B801000000                      mov rax, SYSCALL_WRITE ; syscall 0x01: write(rdi, rsi, rdx) - (int, char*, size_t)
+   153 000000D3 BF01000000                      mov rdi, 1              ; stdout
+   154 000000D8 48BE-                           mov rsi, buffer_out     ; address of str - in stack last char
+   154 000000DA [0000000000000000] 
+   155 000000E2 4C89DA                          mov rdx, r11             ; length
+   156 000000E5 0F05                            syscall
+   157                                                  
+   158 000000E7 5F                              pop rdi          ;revive regs
+   159 000000E8 5A                              pop rdx        
+   160 000000E9 5E                              pop rsi
+   161 000000EA 59                              pop rcx
+   162 000000EB 58                              pop rax  
+   163 000000EC 415B                            pop r11
+   164                                  
+   165 000000EE C3                              ret 
+   166                                  ;========================================================================================
+   167                                  ;print_char(int a) - function of write one char symbol in stdout
+   168                                  ;Args: ABI - argument in rdi, r11 - global counter of buffer
+   169                                  ;Ret: void
+   170                                  ;Change: buffer_out, r11
+   171                                  print_char:
+   172 000000EF 90                              nop
+   173                                          ;if (size_buff<=r11) {write, clear}
+   174                                  .if_start:
+   175 000000F0 4983FB0A                        cmp r11, SIZE_BUFFER
+   176 000000F4 7219                            jb .if_end 
+   177                                   
+   178 000000F6 E8C9FFFFFF                      call write_buff
+   179                                  
+   180 000000FB 51                              push rcx
+   181 000000FC 4C89D9                          mov rcx, r11
+   182                                  .for_start:
+   183 000000FF C681[00000000]00                mov buffer_out[rcx], byte 0
+   184 00000106 E2F7                            loop .for_start
+   185 00000108 59                              pop rcx
+   186 00000109 41BB00000000                    mov r11, 0
+   187                                  .if_end:
+   188 0000010F 4188BB[00000000]                mov buffer_out[r11], dil
+   189 00000116 49FFC3                          inc r11
+   190 00000119 C3                              ret
+   191                                  ;========================================================================================
+   192                                  ;print_ch(int a) - function of write one char symbol in stdout
+   193                                  ;Args: ABI - argument in rdi, r11 - global counter of buffer
+   194                                  ;Ret: void
+   195                                  ;Change: nothing
+   196                                  print_ch:
+   197 0000011A E8D0FFFFFF                      call print_char
+   198 0000011F E96CFFFFFF                      jmp printf_32.return_place
+   199                                  ;----------------------------------------------------------------------------------------
+   200                                  ;print_str(const char* buff) - function of write string in stdout
+   201                                  ;Args: ABI - argument in rdi
+   202                                  ;Ret: void
+   203                                  ;Change: rdi, rbx
+   204                                  print_str:
+   205 00000124 90                              nop
+   206 00000125 57                              push rdi        ;save regs
+   207 00000126 53                              push rbx
+   208                                          ;while(*ch != '\0') {print_char(*ch)}
+   209 00000127 4889FB                          mov rbx, rdi   ;rbx - address on buffer
+   210                                  .while_start:
+   211 0000012A 803B00                          cmp byte [rbx], 0    ; *ch != '\0'
+   212 0000012D 7410                            je .while_end
+   213 0000012F 4831FF                          xor rdi, rdi         ;set rdi = 0
+   214 00000132 408A3B                          mov dil, byte [rbx]  ;mov rdi(dil = 1 byte), [rbx] 
+   215                                  
+   216 00000135 E8B5FFFFFF                      call print_char ;call print current char
+   217                                  
+   218                                          ;set next symbol
+   219 0000013A 48FFC3                          inc rbx
+   220 0000013D EBEB                            jmp .while_start
+   221                                  .while_end:
+   222 0000013F 5B                              pop rbx         ;revive regs
+   223 00000140 5F                              pop rdi
+   224 00000141 E94AFFFFFF                      jmp printf_32.return_place
+   225                                  ;----------------------------------------------------------------------------------------
+   226                                  ;print_dec_sign(int a) - function of write decimal number
+   227                                  ;Args: ABI - argument in rdi
+   228                                  ;Ret: void
+   229                                  ;Change: rsi, rcx, rdi, rax, rdx, r8, r9
+   230                                  print_dec_sign:
+   231 00000146 90                              nop
+   232                                  
+   233 00000147 56                              push rsi        ;save regs
+   234 00000148 51                              push rcx
+   235 00000149 57                              push rdi
+   236 0000014A 50                              push rax
+   237 0000014B 52                              push rdx
+   238                                  
+   239 0000014C 4889F8                          mov rax, rdi     ;rax = number
+   240 0000014F 41B80A000000                    mov r8, 10
+   241 00000155 83F800                          cmp eax, 0       ;Use eax, because its 32byte signed number
+   242 00000158 7C02                            jl .case_neg
+   243 0000015A EB0A                            jmp .end_case
+   244                                  .case_neg:              ;case of negative number
+   245 0000015C F7D8                            neg eax         ;Make signed 32byte number - unsigned
+   246 0000015E 40B72D                          mov dil, '-'
+   247 00000161 E889FFFFFF                      call print_char ;call print current char
+   248                                  .end_case:
+   249                                          ;printing digits
+   250                                          ;div: rax - quotient, rdx - remains 
+   251 00000166 4831C9                          xor rcx, rcx    ;rcx - counter of digits
+   252 00000169 4831D2                          xor rdx, rdx
+   253                                  .while_start:           ;do{...}while(rax != 0)
+   254 0000016C 4899                            cqo             ;expand rax to rdx:rax for dividing
+   255 0000016E 49F7F0                          div r8       
+   256 00000171 4D31C9                          xor r9, r9
+   257 00000174 448A8A[EB030000]                mov r9b, dec_str[rdx]
+   258 0000017B 4151                            push r9
+   259 0000017D 48FFC1                          inc rcx         ;inc rcx
+   260 00000180 4883F800                        cmp rax, 0
+   261 00000184 7402                            je .while_end
+   262 00000186 EBE4                            jmp .while_start
+   263                                  .while_end:
+   264 00000188 4831FF                          xor rdi, rdi
+   265                                  .for_begin:             ;loop: print all digits from stack
+   266 0000018B 5F                              pop rdi         
+   267 0000018C E85EFFFFFF                      call print_char ;print char
+   268 00000191 E2F8                            loop .for_begin
+   269                                  
+   270 00000193 5A                              pop rdx         ;revive regs
+   271 00000194 58                              pop rax
+   272 00000195 5F                              pop rdi
+   273 00000196 59                              pop rcx
+   274 00000197 5E                              pop rsi
+   275                                  
+   276 00000198 E9F3FEFFFF                      jmp printf_32.return_place
+   277                                  ;----------------------------------------------------------------------------------------
+   278                                  ;print_dec_unsign(int a) - function of write decimal number
+   279                                  ;Args: ABI - argument in rdi
+   280                                  ;Ret: void
+   281                                  ;Change: rsi, rcx, rdi, rax, rdx, r8, r9
+   282                                  print_dec_unsign:
+   283 0000019D 90                              nop
+   284                                          
+   285 0000019E 56                              push rsi        ;save regs
+   286 0000019F 51                              push rcx
+   287 000001A0 57                              push rdi
+   288 000001A1 50                              push rax
+   289 000001A2 52                              push rdx
+   290                                          
+   291 000001A3 4889F8                          mov rax, rdi     ;rax = number
+   292 000001A6 41B80A000000                    mov r8, 10
+   293                                          ;printing digits
+   294                                          ;div: rax - quotient, rdx - remains 
+   295 000001AC 4831C9                          xor rcx, rcx    ;rcx - counter of digits
+   296                                  .while_start:           ;do{...}while(rax != 0)
+   297 000001AF 4899                            cqo             ;expand rax to rdx:rax for dividing
+   298 000001B1 49F7F0                          div r8       
+   299 000001B4 4D31C9                          xor r9, r9
+   300 000001B7 448A8A[EB030000]                mov r9b, dec_str[rdx]
+   301 000001BE 4151                            push r9
+   302 000001C0 48FFC1                          inc rcx         ;inc rcx
+   303 000001C3 4883F800                        cmp rax, 0
+   304 000001C7 7402                            je .while_end
+   305 000001C9 EBE4                            jmp .while_start
+   306                                  .while_end:
+   307 000001CB 4831FF                          xor rdi, rdi
+   308                                  .for_begin:             ;loop: print all digits from stack
+   309 000001CE 5F                              pop rdi         
+   310 000001CF E81BFFFFFF                      call print_char ;print char
+   311 000001D4 E2F8                            loop .for_begin
+   312                                          
+   313 000001D6 5A                              pop rdx         ;revive regs
+   314 000001D7 58                              pop rax
+   315 000001D8 5F                              pop rdi
+   316 000001D9 59                              pop rcx
+   317 000001DA 5E                              pop rsi
+   318                                          
+   319 000001DB E9B0FEFFFF                      jmp printf_32.return_place
+   320                                  ;----------------------------------------------------------------------------------------
+   321                                  ;print_hex(int a) - function of write hexiamal number
+   322                                  ;Args: ABI - argument in rdi - number
+   323                                  ;Ret: void
+   324                                  ;Change: rsi, rcx, rdi, rax, rdx, r8
+   325                                  print_hex:
+   326 000001E0 90                              nop
+   327                                          
+   328 000001E1 56                              push rsi        ;save regs
+   329 000001E2 51                              push rcx
+   330 000001E3 57                              push rdi
+   331 000001E4 50                              push rax
+   332 000001E5 52                              push rdx
+   333                                          
+   334 000001E6 4889F8                          mov rax, rdi     ;rax = number
+   335                                          ;print prefix "0x" with macros
+   336                                  %ifdef  HEX_PREFIX
+   337 000001E9 4831FF                          xor rdi,rdi
+   338 000001EC BF30000000                      mov rdi, '0'
+   339 000001F1 E8F9FEFFFF                      call print_char
+   340 000001F6 BF78000000                      mov rdi, 'x'
+   341 000001FB E8EFFEFFFF                      call print_char
+   342                                  %endif
+   343                                          ;printing digits
+   344                                          ;div: rax - quotient, rdx - remains 
+   345 00000200 4831C9                          xor rcx, rcx    ;rcx - counter of digits
+   346                                  .while_start:           ;do{...}while(rax != 0)
+   347 00000203 4831D2                          xor rdx, rdx
+   348 00000206 6689C2                          mov dx, ax      ;in dx - digit
+   349 00000209 6683E20F                        and dx, 15      
+   350 0000020D 4D31C0                          xor r8, r8
+   351 00000210 448A82[EB030000]                mov r8b, dec_str[rdx]
+   352 00000217 4150                            push r8
+   353 00000219 48C1E804                        shr rax, 4      ;dividing on 16
+   354 0000021D 48FFC1                          inc rcx         ;inc rcx
+   355 00000220 4885C0                          test rax, rax      ;test rax,rax
+   356 00000223 7402                            je .while_end
+   357 00000225 EBDC                            jmp .while_start
+   358                                  .while_end:
+   359 00000227 4831FF                          xor rdi, rdi
+   360                                  .for_begin:             ;loop: print all digits from stack
+   361 0000022A 5F                              pop rdi         
+   362 0000022B E8BFFEFFFF                      call print_char ;print char
+   363 00000230 E2F8                            loop .for_begin
+   364                                                  
+   365 00000232 5A                              pop rdx         ;revive regs
+   366 00000233 58                              pop rax
+   367 00000234 5F                              pop rdi
+   368 00000235 59                              pop rcx
+   369 00000236 5E                              pop rsi
+   370                                          
+   371 00000237 E954FEFFFF                      jmp printf_32.return_place
+   372                                  ;----------------------------------------------------------------------------------------
+   373                                  ;print_oct(int a) - function of write octal number
+   374                                  ;Args: ABI - argument in rdi - number
+   375                                  ;Ret: void
+   376                                  ;Change: rsi, rcx, rdi, rax, rdx, r8
+   377                                  print_oct:
+   378 0000023C 90                              nop
+   379                                          
+   380 0000023D 56                              push rsi        ;save regs
+   381 0000023E 51                              push rcx
+   382 0000023F 57                              push rdi
+   383 00000240 50                              push rax
+   384 00000241 52                              push rdx
+   385                                          
+   386 00000242 4889F8                          mov rax, rdi     ;rax = number
+   387                                          ;print "0o"
+   388                                  %ifdef  OCT_PREFIX
+   389 00000245 4831FF                          xor rdi,rdi
+   390 00000248 BF30000000                      mov rdi, '0'
+   391 0000024D E89DFEFFFF                      call print_char
+   392 00000252 BF6F000000                      mov rdi, 'o'
+   393 00000257 E893FEFFFF                      call print_char
+   394                                  %endif
+   395                                          ;printing digits
+   396                                          ;div: rax - quotient, rdx - remains 
+   397 0000025C 4831C9                          xor rcx, rcx    ;rcx - counter of digits
+   398                                  .while_start:           ;do{...}while(rax != 0)
+   399 0000025F 4831D2                          xor rdx, rdx
+   400 00000262 6689C2                          mov dx, ax      ;in dx - digit
+   401 00000265 6683E207                        and dx, 7       ;dx - remains dx % 7
+   402 00000269 4D31C0                          xor r8, r8
+   403 0000026C 448A82[E2030000]                mov r8b, oct_str[rdx]
+   404 00000273 4150                            push r8
+   405 00000275 48C1E803                        shr rax, 3      ;dividing on 8
+   406 00000279 48FFC1                          inc rcx         ;inc rcx
+   407 0000027C 4885C0                          test rax, rax      ;test rax,rax
+   408 0000027F 7402                            je .while_end
+   409 00000281 EBDC                            jmp .while_start
+   410                                  .while_end:
+   411 00000283 4831FF                          xor rdi, rdi
+   412                                  .for_begin:             ;loop: print all digits from stack
+   413 00000286 5F                              pop rdi         
+   414 00000287 E863FEFFFF                      call print_char ;print char
+   415 0000028C E2F8                            loop .for_begin
+   416                                                          
+   417 0000028E 5A                              pop rdx         ;revive regs
+   418 0000028F 58                              pop rax
+   419 00000290 5F                              pop rdi
+   420 00000291 59                              pop rcx
+   421 00000292 5E                              pop rsi
+   422                                          
+   423 00000293 E9F8FDFFFF                      jmp printf_32.return_place
+   424                                  ;----------------------------------------------------------------------------------------
+   425                                  ;print_bin(int a) - function of write binary number
+   426                                  ;Args: ABI - argument in rdi - number
+   427                                  ;Ret: void
+   428                                  ;Change: rsi, rcx, rdi, rax, rdx
+   429                                  print_bin:
+   430 00000298 90                              nop
+   431                                                  
+   432 00000299 56                              push rsi        ;save regs
+   433 0000029A 51                              push rcx
+   434 0000029B 57                              push rdi
+   435 0000029C 50                              push rax
+   436 0000029D 52                              push rdx
+   437                                          
+   438 0000029E 4889F8                          mov rax, rdi     ;rax = number
+   439                                          ;print "0o"
+   440                                  %ifdef  BIN_PREFIX
+   441 000002A1 4831FF                          xor rdi,rdi
+   442 000002A4 BF30000000                      mov rdi, '0'
+   443 000002A9 E841FEFFFF                      call print_char
+   444 000002AE BF62000000                      mov rdi, 'b'
+   445 000002B3 E837FEFFFF                      call print_char
+   446                                  %endif
+   447                                          ;printing digits
+   448                                          ;div: rax - quotient, rdx - remains 
+   449 000002B8 4831C9                          xor rcx, rcx    ;rcx - counter of digits
+   450                                  .while_start:           ;do{...}while(rax != 0)
+   451 000002BB 4831D2                          xor rdx, rdx
+   452 000002BE 6689C2                          mov dx, ax      ;in dx - digit
+   453 000002C1 6683E201                        and dx, 1       ;dx - remains
+   454 000002C5 4D31C0                          xor r8, r8
+   455 000002C8 448A82[E0030000]                mov r8b, bin_str[rdx]
+   456 000002CF 4150                            push r8
+   457 000002D1 48D1E8                          shr rax, 1      ;dividing on 2
+   458 000002D4 48FFC1                          inc rcx         ;inc rcx
+   459 000002D7 4885C0                          test rax, rax      ;test rax,rax
+   460 000002DA 7402                            je .while_end
+   461 000002DC EBDD                            jmp .while_start
+   462                                  .while_end:
+   463 000002DE 4831FF                          xor rdi, rdi
+   464                                  .for_begin:             ;loop: print all digits from stack
+   465 000002E1 5F                              pop rdi         
+   466 000002E2 E808FEFFFF                      call print_char ;print char
+   467 000002E7 E2F8                            loop .for_begin
+   468                                                          
+   469 000002E9 5A                              pop rdx         ;revive regs
+   470 000002EA 58                              pop rax
+   471 000002EB 5F                              pop rdi
+   472 000002EC 59                              pop rcx
+   473 000002ED 5E                              pop rsi
+   474                                          
+   475 000002EE E99DFDFFFF                      jmp printf_32.return_place
+   476                                  ;----------------------------------------------------------------------------------------
+   477                                  ;print_addr(int a) - function of write hexiamal number
+   478                                  ;Args: ABI - argument in rdi - number
+   479                                  ;Ret: void
+   480                                  ;Change: rsi, rcx, rdi, rax, rdx, r8
+   481                                  print_addr:
+   482 000002F3 90                              nop
+   483                                                  
+   484 000002F4 56                              push rsi        ;save regs
+   485 000002F5 51                              push rcx
+   486 000002F6 57                              push rdi
+   487 000002F7 50                              push rax
+   488 000002F8 52                              push rdx
+   489                                          
+   490 000002F9 4889F8                          mov rax, rdi     ;rax = number
+   491                                          ;print prefix "0x" with macros
+   492                                  %ifdef  ADDR_PREFIX
+   493 000002FC 4831FF                          xor rdi,rdi
+   494 000002FF BF30000000                      mov rdi, '0'
+   495 00000304 E8E6FDFFFF                      call print_char
+   496 00000309 BF78000000                      mov rdi, 'x'
+   497 0000030E E8DCFDFFFF                      call print_char
+   498                                  %endif
+   499                                          ;printing digits
+   500                                          ;div: rax - quotient, rdx - remains 
+   501 00000313 B90F000000                      mov rcx, 15
+   502                                  .while_start:           ;do{...}while(rax != 0)
+   503 00000318 4831D2                          xor rdx, rdx
+   504 0000031B 6689C2                          mov dx, ax      ;in dx - digit
+   505 0000031E 6683E20F                        and dx, 15      
+   506 00000322 4D31C0                          xor r8, r8
+   507 00000325 448A82[05040000]                mov r8b, hex_str_small[rdx]
+   508 0000032C 4150                            push r8  ; push digit symbol
+   509 0000032E 48C1E804                        shr rax, 4      ;dividing on 16
+   510 00000332 4883F900                        cmp rcx, 0
+   511 00000336 7405                            je .while_end
+   512 00000338 48FFC9                          dec rcx
+   513 0000033B EBDB                            jmp .while_start
+   514                                  .while_end:
+   515 0000033D 4831FF                          xor rdi, rdi
+   516 00000340 B910000000                      mov rcx, 16
+   517                                  .for_begin:         ;loop: print all digits from stack
+   518 00000345 5F                              pop rdi         
+   519 00000346 4883FF30                        cmp rdi, '0'
+   520 0000034A 7405                            je .skip_zero
+   521 0000034C E89EFDFFFF                      call print_char ;print char
+   522                                  .skip_zero:
+   523 00000351 E2F2                            loop .for_begin
+   524                                                          
+   525 00000353 5A                              pop rdx         ;revive regs
+   526 00000354 58                              pop rax
+   527 00000355 5F                              pop rdi
+   528 00000356 59                              pop rcx
+   529 00000357 5E                              pop rsi
+   530                                          
+   531 00000358 E933FDFFFF                      jmp printf_32.return_place
+   532                                  ;========================================================================================
+   533                                  
+   534                                  ;=====================================DATA=SECTION=======================================
+   535                                  
+   536                                  section .rodata
+   537                                  ;ABCDEFGHIJKLMNOPQRSTUVWXYZ
+   538                                  ;b c d n o p s u x
+   539                                  error_buffer:          ;Extra buffer before & after jmp table if user write %????
+   540 00000000 [BD00000000000000]-             times 'b'       dq      printf_32.error_return
+   540 00000000 <rep 62h>          
+   541                                  jump_table_of_printf:
+   542 00000310 [9802000000000000]                              dq      print_bin
+   543 00000318 [1A01000000000000]                              dq      print_ch
+   544 00000320 [4601000000000000]                              dq      print_dec_sign
+   545 00000328 [BD00000000000000]-             times 'o'-'d'-1 dq      printf_32.error_return
+   545 00000328 <rep Ah>           
+   546 00000378 [3C02000000000000]                              dq      print_oct
+   547 00000380 [F302000000000000]                              dq      print_addr
+   548 00000388 [BD00000000000000]-             times 's'-'p'-1 dq      printf_32.error_return
+   548 00000388 <rep 2h>           
+   549 00000398 [2401000000000000]                              dq      print_str
+   550 000003A0 [BD00000000000000]              times 'u'-'s'-1 dq      printf_32.error_return
+   551 000003A8 [9D01000000000000]                              dq      print_dec_unsign
+   552 000003B0 [BD00000000000000]-             times 'x'-'u'-1 dq      printf_32.error_return
+   552 000003B0 <rep 2h>           
+   553 000003C0 [E001000000000000]                              dq      print_hex
+   554 000003C8 [BD00000000000000]-             times 'z'-'x'+1 dq      printf_32.error_return
+   554 000003C8 <rep 3h>           
+   555                                  
+   556                                  section .rodata
+   557                                  ;const alphabets for number systems
+   558 000003E0 3031                    bin_str:        db "01"
+   559 000003E2 303132333435343637      oct_str:        db "012345467"
+   560 000003EB 303132333435363738-     dec_str         db "0123456789"
+   560 000003F4 39                 
+   561 000003F5 303132333435363738-     hex_str_big:    db "0123456789ABCDEF"
+   561 000003FE 39414243444546     
+   562 00000405 303132333435363738-     hex_str_small:  db "0123456789abcdef"
+   562 0000040E 39616263646566     
+   563                                  
+   564                                  section .data
+   565                                  ;buffer for write
+   566 00000000 00<rep Ah>              buffer_out:     times SIZE_BUFFER db 0
