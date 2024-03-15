@@ -22,6 +22,9 @@ Simple version of printf() on NASM on Linux x86-64:
 + `%p` - pointer address in hex(64-byte)
 + `%n` - writes in address the number of characters outputted so far (32-byte)
 
+*Options:*
+- If tou want disable/enable prefixies in diffrent number systems ("0o" "0x" "0b") comment `%define HEX_PREFIX 1` and etc in [```lib.inc```](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Printf32/src_asm/lib.inc)
+
 *Return:*
 + `1` if success
 + `0` if fail or error
