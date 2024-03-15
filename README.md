@@ -6,9 +6,9 @@ Programs on NASM+C on Linux x86-64
 
 Simple version of printf() on NASM on Linux x86-64:
 
-[```Printf32.nasm```]((https://github.com/khmelnitskiianton/AsmCx86/blob/main/Printf32/src_asm/printf32.nasm))
+[```Printf32.nasm```](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Printf32/src_asm/printf32.nasm)
 
-[```lib.inc```]((https://github.com/khmelnitskiianton/AsmCx86/blob/main/Printf32/src_asm/lib.ink))
+[```lib.inc```](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Printf32/src_asm/lib.inc)
 
 *Specifiers*:
 
@@ -20,7 +20,7 @@ Simple version of printf() on NASM on Linux x86-64:
 + `%x` - hexiamal integer number(64-byte)
 + `%b` - binary integer number(64-byte)
 + `%p` - pointer address in hex(64-byte)
-+ `%n` - writes in address the number of characters outputted so far
++ `%n` - writes in address the number of characters outputted so far (32-byte)
 
 *Return:*
 + `1` if success
@@ -35,6 +35,7 @@ Output:
 0o36666666666
 -1 love 0x430 100%!0b1111111
 -1 love 0x430 100%!0b1111111
+```
 ```cpp
 int b = 1;
 Printf32("abba%n-best\n", &b);
