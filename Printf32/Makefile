@@ -26,3 +26,7 @@ $(OBJ)/%.o : $(SRC_C)/%$(SRC_C_EXT)				#Object with GCC use -O3
 .PHONY: clean
 clean:
 	rm -f $(OUT)/* $(OBJ)/*.o $(OBJ)/*.lst
+
+.PHONY: run
+run:
+	$(OUT)$(NAME)	
