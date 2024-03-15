@@ -2,7 +2,7 @@
 
 Programs on NASM+C on Linux x86-64
 
-## Printf
+## Printf32()
 
 Simple version of printf() on NASM on Linux x86-64:
 
