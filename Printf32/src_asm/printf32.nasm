@@ -10,8 +10,8 @@ section .text
 
 ;========================================MAIN=FUNCTION===================================
 ;Printf32(...) - function supporting because of ABI
-;DON'T CHANGE R10, R11, 
-
+;DON'T CHANGE R10, R11 - GLOBAL REGS!!!
+;DON'T CHANGE R8,R9 - TABLE OF JMPS DON'T SAVE THEM
 Printf32: 
         nop
                 
@@ -54,7 +54,6 @@ Printf32:
 ;Args: ABI - arguments in stack
 ;Ret: void
 ;Change: rbx, rdi, rcx, r12, r13, r14, r15
-;r8 & r9 dont use, table_of_junmps dont save them
 printf_32:
         nop
         ;input action
@@ -537,7 +536,7 @@ section .rodata
 ;ABCDEFGHIJKLMNOPQRSTUVWXYZ
 ;b c d n o p s u x
 error_buffer:          ;Extra buffer before & after jmp table if user write %????
-        times 'b'       dq      printf_32.error_return
+        times 'b'+1     dq      printf_32.error_return  ;error buffer before '\0'-'b'
 jump_table_of_printf:
                         dq      print_bin
                         dq      print_ch
@@ -551,7 +550,7 @@ jump_table_of_printf:
                         dq      print_dec_unsign
         times 'x'-'u'-1 dq      printf_32.error_return
                         dq      print_hex
-        times 'z'-'x'+1 dq      printf_32.error_return
+        times 127-'x'+1 dq      printf_32.error_return  ;error buffer after '~'-'x'
 
 section .rodata
 ;const alphabets for number systems
