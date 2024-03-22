@@ -47,6 +47,9 @@ Output:
 abba-best
 4
 ```
+## Mandelbrot set
+
+Drawing mandelbrot set in SDL2 on C
 
 ## My programs
 
