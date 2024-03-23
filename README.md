@@ -45,12 +45,14 @@ abba-best
 ```
 ## Mandelbrot set
 
-Project of testing optimization on Mandelbrot set visualization
+Project of testing optimization on Mandelbrot set visualization.
+
+*System*: Linux x86-64
 
 *Drawing*:
 
 - I draw Mandelbrot set with SDL2 on C
-- Visualization has interface: `&#8592`,`&#8593`,`&#8594`,`&#8595` for moving. `-`,`+` for zoom  set
+- Visualization has interface: &#8592;,&#8593;,&#8594;,&#8595; for moving and -,+ for zoom  set
 - In the angle drawing actual FPS of rendering set.
 
 *Optimiztion:*
