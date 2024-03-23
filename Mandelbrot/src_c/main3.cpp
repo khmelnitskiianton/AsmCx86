@@ -3,7 +3,8 @@
 #include <SDL2/SDL.h>
 #include "SDL_ttf.h"
 #include <math.h>
-  
+#include <emmintrin.h>
+ 
 const size_t SIZE = 4;
 const int SCREEN_WIDTH  = 800;      //1920;
 const int SCREEN_HEIGHT = 600;       //1080;
@@ -17,13 +18,17 @@ const size_t SIZE_OF_BUFFER = 100;
 const size_t WIDTH_TEXT     = 200;
 const size_t HEIGHT_TEXT    = 70;
 
+const __m128 r2max      = _mm_set_ps1 (100.f);//100.f;
+const __m128 _3210      = _mm_set_ps  (3.f, 2.f, 1.f, 0.f);
+const __m128 nmax       = _mm_set_ps1 (N_MAX);
+
 const uint64_t clock_speed_spu = 2000000000;
 
 int         sdl_ctor();
 int         sdl_dtor();
 uint64_t    rdtsc();
 bool        DrawMandelbrot(float* x_center, float* y_center, float* scale);
-void        CalcColor(SDL_Color* pixel_color, size_t n);
+void        CalcColor(SDL_Color* pixel_color, int n);
 void        CleanBuffer(char* buff, size_t leng);
 
 SDL_Window   *window = NULL;
@@ -37,7 +42,7 @@ int main() {
     // Initialize SDL
     if (sdl_ctor() == 1) {
         return 1;
-    }   
+    }
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     // Wait for the user to close the window
     float x_center = X_SHIFT;
@@ -144,7 +149,7 @@ uint64_t rdtsc()
    return ( (uint64_t)lo)|( ((uint64_t)hi)<<32 );
 }
 
-void CalcColor(SDL_Color* pixel_color, size_t n)
+void CalcColor(SDL_Color* pixel_color, int n)
 {
     if (!pixel_color) return;
     // Normalize the value to the range [0, 1]
@@ -163,16 +168,18 @@ bool DrawMandelbrot(float* x_center, float* y_center, float* scale)
 {
     float x_0 = 0;
     float y_0 = 0;
-    float x[SIZE] = {};
-    float y[SIZE] = {};
-    float x2[SIZE] = {};
-    float y2[SIZE] = {};
-    float xy[SIZE] = {};
-    float r2[SIZE] = {};
-    float x_0_arr[SIZE] = {};
+
+    __m128 x2       = _mm_set_ps (0.f, 0.f, 0.f, 0.f);
+    __m128 y2       = _mm_set_ps (0.f, 0.f, 0.f, 0.f);
+    __m128 xy       = _mm_set_ps (0.f, 0.f, 0.f, 0.f);
+    __m128 r2       = _mm_set_ps (0.f, 0.f, 0.f, 0.f);
+    __m128 x_0_arr  = _mm_set_ps (0.f, 0.f, 0.f, 0.f);
+    __m128 y_0_arr  = _mm_set_ps (0.f, 0.f, 0.f, 0.f);
+    __m128 x        = _mm_set_ps (0.f, 0.f, 0.f, 0.f);
+    __m128 y        = _mm_set_ps (0.f, 0.f, 0.f, 0.f);
+    __m128 cmp      = _mm_set_ps (0.f, 0.f, 0.f, 0.f);
+    __m128i n       = _mm_setzero_si128();
     int mask = 0;
-    float r2max = RADIUS;
-    bool color_flag[SIZE] = {};
     SDL_Color pixel_color = {};
     for (int y_i = 0; y_i < SCREEN_HEIGHT; y_i++)
     {
@@ -181,39 +188,38 @@ bool DrawMandelbrot(float* x_center, float* y_center, float* scale)
             return 0;
         }
         //set line with height = y0 and x - counting
-        x_0 = *x_center + (                     - (float)SCREEN_WIDTH *(*scale)/2)*dx; 
+        x_0 = *x_center + (                    - (float)SCREEN_WIDTH *(*scale)/2)*dx; 
         y_0 = *y_center + ((float)y_i*(*scale) - (float)SCREEN_HEIGHT*(*scale)/2)*dy;
         for (int x_i = 0; x_i < SCREEN_WIDTH; x_i += 4 , x_0 += 4*dx*(*scale))
         {
             //counting (x,y)
-            for (size_t i = 0; i < SIZE; i++) color_flag[i] = 0;
-            for (size_t i = 0; i < SIZE; i++) x_0_arr[i] = x_0 + dx*((float)i)*(*scale);
-            for (size_t i = 0; i < SIZE; i++) x[i] = x_0_arr[i];
-            for (size_t i = 0; i < SIZE; i++) y[i] = y_0;
-            //check if (x,y) not run away from circle
-            size_t n[SIZE] = {0,0,0,0};
+            x_0_arr = _mm_add_ps (_mm_set_ps1 (x_0), _mm_mul_ps (_3210, _mm_set_ps1 (dx*(*scale))));
+            y_0_arr =                                                   _mm_set_ps1 (y_0);
+            x = x_0_arr;
+            y = y_0_arr;
+            n = _mm_setzero_si128();
             for (size_t m = 0; m < N_MAX; m++)
             {
-                int cmp[SIZE] = {0,0,0,0};
-                for (size_t k = 0; k < SIZE; k++)    x2[k] = x[k] * x[k];
-                for (size_t k = 0; k < SIZE; k++)    y2[k] = y[k] * y[k];
-                for (size_t k = 0; k < SIZE; k++)    xy[k] = x[k] * y[k];
-                for (size_t k = 0; k < SIZE; k++)    r2[k] = (x2[k] + y2[k]);
-                for (size_t k = 0; k < SIZE; k++) if (r2[k] <= r2max) cmp[k] = 1;
-                for (size_t k = 0; k < SIZE; k++) if (r2[k] > r2max)  color_flag[k] = 1;
+                x2 = _mm_mul_ps (x, x);
+                y2 = _mm_mul_ps (y, y);
+                xy = _mm_mul_ps (x, y);
+                r2 = _mm_add_ps (x2,y2);
+                cmp = _mm_cmple_ps (r2, r2max);
                 mask = 0; 
-                for (size_t k = 0; k < SIZE; k++) mask |= (cmp[k] << k);
+                mask = _mm_movemask_ps (cmp);
                 if (!mask) break;
-                for (size_t k = 0; k < SIZE; k++) n[k] = n[k] + (size_t)cmp[k];
-                for (size_t k = 0; k < SIZE; k++) x[k] = x2[k] - y2[k] + x_0_arr[k];
-                for (size_t k = 0; k < SIZE; k++) y[k] = 2 * xy[k]     + y_0;
-            }  
+                n = _mm_add_epi32 (n, _mm_castps_si128(cmp)); 
+                x = _mm_add_ps (_mm_sub_ps(x2,y2), x_0_arr);
+                y = _mm_add_ps (_mm_add_ps(xy,xy), y_0_arr);
+            }   
             for (size_t j = 0; j < SIZE; j++)
             {
+                int* n_ptr   = (int*) &n;
+                int* cmp_ptr = (int*) &cmp;
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-                if (color_flag[j])
+                if (!cmp_ptr[j])
                 {
-                    CalcColor(&pixel_color, n[j]);
+                    CalcColor(&pixel_color, n_ptr[j]);
                     SDL_SetRenderDrawColor(renderer, pixel_color.r, pixel_color.g, pixel_color.b, 255);
                 }
                 SDL_RenderDrawPoint(renderer, x_i+(int)j, y_i);

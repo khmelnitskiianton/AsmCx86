@@ -1,7 +1,3 @@
-# AsmCx86
-
-Programs on NASM+C on Linux x86-64
-
 ## Printf32()
 
 Simple version of printf() on NASM on Linux x86-64:
@@ -49,9 +45,44 @@ abba-best
 ```
 ## Mandelbrot set
 
-Drawing mandelbrot set in SDL2 on C
+Project of testing optimization on Mandelbrot set visualization
 
-## My programs
+*Drawing*:
+
+- I draw Mandelbrot set with SDL2 on C
+- Visualization has interface: `&#8592`,`&#8593`,`&#8594`,`&#8595` for moving. `-`,`+` for zoom  set
+- In the angle drawing actual FPS of rendering set.
+
+*Optimiztion:*
+
+I have 3 versions of code:
+
+1. Naked algorithm [main1.cpp](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Mandelbrot/src_c/main1.cpp)
+2. Algorithm using merging 4 pixel in line in one operation [main2.cpp](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Mandelbrot/src_c/main2.cpp)
+3. Using vectorization AVX and SIMD [main3.cpp](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Mandelbrot/src_c/main3.cpp)
+
+*Example of vizualization*:
+
+<img src="https://github.com/khmelnitskiianton/AsmCx86/assets/142332024/38b9466e-ba93-45fc-8627-9c8a55e54ce4" width=70%>
+
+*Tests & Results*:
+
+|Version|GCC `-O3`|AVX `-msse2 -mavx`|FPS|
+|-------|---------|------------------|---|
+|   1   |   off   |       off        |3.9|
+|   1   |   on    |       off        |7.3|
+|   1   |   on    |       on         |7.3|
+|   2   |   off   |       off        |0.44|
+|   2   |   on    |       off        |2.9|
+|   2   |   on    |       on         |2.9|
+|   3   |   off   |       off        |6  |
+|   3   |   on    |       off        |14.5|
+|   3   |   on    |       on         |14.9|
+
+
+## Settings
+
+*Compilation & Linking*:
 
 GCC - to compile into an obj file
 
@@ -59,7 +90,7 @@ NASM - to assemble in Linux x86 assembler programs
 
 GCC - to link all files with option `-no-pie`
 
-## Makefile
+*Makefile*:
 
 [```Makefile```](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Makefile)
 
@@ -70,7 +101,7 @@ Need folders `./bin` `./obj` `./src_asm` `./src_c` in current directory with mak
 `make clean`
 `make run`
 
-## NASM
+*NASM:*
 
 `sudo apt install nasm`
 

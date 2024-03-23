@@ -3,25 +3,25 @@
 #include <SDL2/SDL.h>
 #include "SDL_ttf.h"
 #include <math.h>
-
-const int SCREEN_WIDTH  = 1000;      //1920;
-const int SCREEN_HEIGHT = 800;       //1080;
+    
+const int SCREEN_WIDTH  = 800;      //1920;
+const int SCREEN_HEIGHT = 600;       //1080;
 const size_t N_MAX      = 100;       //256;
-const double dx         = 1/400.f;   //1/800.f;
-const double dy         = 1/400.f;   //1/800.f; 
-const double dscale     = 1/80.f;    //1/100.f;
-const double RADIUS     = 150;       //100.f;
-const double X_SHIFT    = -0.55;     //-0.55;
+const float dx          = 1/300.f;   //1/800.f;
+const float dy          = 1/300.f;   //1/800.f; 
+const float dscale      = 1/80.f;    //1/100.f;
+const float RADIUS      = 100;       //100.f;
+const float X_SHIFT     = -0.55f;     //-0.55;
 const size_t SIZE_OF_BUFFER = 100;
-const size_t WIDTH_TEXT = 200;
-const size_t HEIGHT_TEXT = 70;
+const size_t WIDTH_TEXT     = 200;
+const size_t HEIGHT_TEXT    = 70;
 
-const uint64_t clock_speed_spu = 3200000000;
+const uint64_t clock_speed_spu = 2000000000;
 
 int         sdl_ctor();
 int         sdl_dtor();
 uint64_t    rdtsc();
-bool        DrawMandelbrot(double* x_center, double* y_center, double* scale);
+bool        DrawMandelbrot(float* x_center, float* y_center, float* scale);
 void        CalcColor(SDL_Color* pixel_color, size_t n);
 void        CleanBuffer(char* buff, size_t leng);
 
@@ -39,13 +39,13 @@ int main() {
     }
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     // Wait for the user to close the window
-    double x_center = X_SHIFT;
-    double y_center = 0;
-    double scale = 1;
+    float x_center = X_SHIFT;
+    float y_center = 0;
+    float scale = 1;
     bool run = true;
     uint64_t t1 = 0;
     uint64_t t2 = 0;
-    SDL_Color color_text = {0,0,0,0};
+    SDL_Color color_text = {255, 255, 255, 255};
     SDL_Rect Message_rect; //create a rect
     Message_rect.x = 0;  //controls the rect's x coordinate 
     Message_rect.y = 0; // controls the rect's y coordinte
@@ -81,7 +81,8 @@ int main() {
         }
         //render
         t2 = rdtsc();
-        snprintf(fps_buffer, SIZE_OF_BUFFER,"FPS: %lu", clock_speed_spu/(t2 - t1));
+        float fps_float = (float)clock_speed_spu / (float)(t2 - t1);
+        snprintf(fps_buffer, SIZE_OF_BUFFER,"FPS: %.2lf", fps_float);
         surfaceMessage = TTF_RenderText_Solid(font, fps_buffer, color_text); 
         Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
         SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
@@ -146,28 +147,28 @@ void CalcColor(SDL_Color* pixel_color, size_t n)
 {
     if (!pixel_color) return;
     // Normalize the value to the range [0, 1]
-    double normalized = (double)n / (double)N_MAX;
+    float normalized = (float)n / (float)N_MAX;
     // Use sine waves to create a colorful gradient with smooth transitions
-    double r_n = sin(2 * M_PI * normalized * 4.0 + M_PI / 4);
-    double g_n = sin(2 * M_PI * normalized * 8.0 + M_PI / 8);
-    double b_n = sin(2 * M_PI * normalized * 16.0 + M_PI / 16);
+    float r_n = (float) sin(2 * M_PI * normalized * 4.0 + M_PI / 4);
+    float g_n = (float) sin(2 * M_PI * normalized * 8.0 + M_PI / 8);
+    float b_n = (float) sin(2 * M_PI * normalized * 16.0 + M_PI / 16);
     // Convert to the range [0, 255]
     pixel_color->r = (Uint8) ((r_n + 1) * 127.5);
     pixel_color->g = (Uint8) ((g_n + 1) * 127.5);
     pixel_color->b = (Uint8) ((b_n + 1) * 127.5);
 }
 
-bool DrawMandelbrot(double* x_center, double* y_center, double* scale)
+bool DrawMandelbrot(float* x_center, float* y_center, float* scale)
 {
-    double x_0 = 0;
-    double y_0 = 0;
-    double x = 0;
-    double y = 0;
-    double x2 = 0;
-    double y2 = 0;
-    double xy = 0;
-    double r2 = 0;
-    double r2max = RADIUS;
+    float x_0 = 0;
+    float y_0 = 0;
+    float x = 0;
+    float y = 0;
+    float x2 = 0;
+    float y2 = 0;
+    float xy = 0;
+    float r2 = 0;
+    float r2max = RADIUS;
     SDL_Color pixel_color = {};
     bool color_flag = 0;
     for (int y_i = 0; y_i < SCREEN_HEIGHT; y_i++)
@@ -177,8 +178,8 @@ bool DrawMandelbrot(double* x_center, double* y_center, double* scale)
             return 0;
         }
         //set line with height = y0 and x - counting
-        x_0 = *x_center + (                     - (double)SCREEN_WIDTH *(*scale)/2)*dx; 
-        y_0 = *y_center + ((double)y_i*(*scale) - (double)SCREEN_HEIGHT*(*scale)/2)*dy;
+        x_0 = *x_center + (                     - (float)SCREEN_WIDTH *(*scale)/2)*dx; 
+        y_0 = *y_center + ((float)y_i*(*scale) - (float)SCREEN_HEIGHT*(*scale)/2)*dy;
         for (int x_i = 0; x_i < SCREEN_WIDTH; x_i++ , x_0 += dx*(*scale))
         {
             color_flag = 0;
