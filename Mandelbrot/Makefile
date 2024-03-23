@@ -17,10 +17,10 @@ OBJFILES_ASM    = $(patsubst $(SRC_ASM)/%,$(OBJ)/%,$(SOURCES_ASM:$(SRC_ASM_EXT)=
 OBJFILES_C		= $(patsubst $(SRC_C)/%,$(OBJ)/%,$(SOURCES_C:$(SRC_C_EXT)=.o))
 
 $(OUT)$(NAME): $(OBJFILES_C)	#Linking with GCC use -no-pie
-	gcc -O3 -msse2 -mavx -lSDL2 $(CFLAGS) $^ -o $@ -lm
+	gcc -O3 -msse2 -mavx -I/home/anton/lib/freetype2/include/SDL2 `sdl2-config --cflags --libs` -lSDL2 -lSDL2_ttf  $(CFLAGS) $^ -o $@ -lm
 
 $(OBJ)/%.o : $(SRC_C)/%$(SRC_C_EXT)				#Object with GCC use -O3
-	gcc -O3 -msse2 -mavx -lSDL2 $(CFLAGS) -c -o $@ $< -lm
+	gcc -O3 -msse2 -mavx -I/home/anton/lib/freetype2/include/SDL2 `sdl2-config --cflags --libs` -lSDL2 -lSDL2_ttf $(CFLAGS) -c -o $@ $< -lm
 
 .PHONY: clean
 clean:

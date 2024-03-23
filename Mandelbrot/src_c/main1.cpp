@@ -1,13 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL2/SDL.h>
+#include "SDL_ttf.h"
 #include <math.h>
-
-typedef struct ColorRGB {
-    Uint8 r;
-    Uint8 g;
-    Uint8 b;
-} ColorRGB_t;
 
 const int SCREEN_WIDTH  = 1000;      //1920;
 const int SCREEN_HEIGHT = 800;       //1080;
@@ -17,6 +12,9 @@ const double dy         = 1/400.f;   //1/800.f;
 const double dscale     = 1/80.f;    //1/100.f;
 const double RADIUS     = 150;       //100.f;
 const double X_SHIFT    = -0.55;     //-0.55;
+const size_t SIZE_OF_BUFFER = 100;
+const size_t WIDTH_TEXT = 200;
+const size_t HEIGHT_TEXT = 70;
 
 const uint64_t clock_speed_spu = 3200000000;
 
@@ -24,13 +22,17 @@ int         sdl_ctor();
 int         sdl_dtor();
 uint64_t    rdtsc();
 bool        DrawMandelbrot(double* x_center, double* y_center, double* scale);
-void        CalcColor(ColorRGB_t* pixel_color, size_t n);
+void        CalcColor(SDL_Color* pixel_color, size_t n);
+void        CleanBuffer(char* buff, size_t leng);
 
 SDL_Window   *window = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_Event    event;
+SDL_Surface  *surfaceMessage = NULL;
+SDL_Texture  *Message = NULL;
+TTF_Font     *font = NULL; 
 
-int main(int argc, char* argv[]) {
+int main() {
     // Initialize SDL
     if (sdl_ctor() == 1) {
         return 1;
@@ -43,6 +45,13 @@ int main(int argc, char* argv[]) {
     bool run = true;
     uint64_t t1 = 0;
     uint64_t t2 = 0;
+    SDL_Color color_text = {0,0,0,0};
+    SDL_Rect Message_rect; //create a rect
+    Message_rect.x = 0;  //controls the rect's x coordinate 
+    Message_rect.y = 0; // controls the rect's y coordinte
+    Message_rect.w = WIDTH_TEXT; // controls the width of the rect
+    Message_rect.h = HEIGHT_TEXT; // controls the height of the rect
+    char fps_buffer[SIZE_OF_BUFFER] = {};
     while (run)
     {
         t1 = rdtsc();
@@ -61,22 +70,28 @@ int main(int argc, char* argv[]) {
                 if (event.key.keysym.sym == SDLK_MINUS)  scale += dscale;
             }
         }
-        //clear window
+        //clear
         SDL_RenderClear(renderer);
+        SDL_FreeSurface(surfaceMessage);
+        CleanBuffer(fps_buffer, SIZE_OF_BUFFER);
         //body
         if (!DrawMandelbrot(&x_center, &y_center, &scale))
         {
             run = false;
         }
         //render
-        SDL_RenderPresent(renderer); 
         t2 = rdtsc();
-        printf("FPS: %lu CLOCK: %lu\n", clock_speed_spu/(t2 - t1), (t2 - t1));
+        snprintf(fps_buffer, SIZE_OF_BUFFER,"FPS: %lu", clock_speed_spu/(t2 - t1));
+        surfaceMessage = TTF_RenderText_Solid(font, fps_buffer, color_text); 
+        Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+        SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
+        SDL_RenderPresent(renderer);
     }
     // Clean up and quit SDL
     sdl_dtor();
     return 0;
 }
+
 
 int sdl_ctor() 
 {
@@ -101,12 +116,19 @@ int sdl_ctor()
     }
     // Create a renderer for the window
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    
+    TTF_Init();
+    font = TTF_OpenFont("/usr/share/fonts/truetype/firacode/FiraCode-Bold.ttf", 256);
+
     return 0;
 }
 
 int sdl_dtor() 
 {
+    SDL_RenderClear(renderer);
+    SDL_FreeSurface(surfaceMessage);
+    SDL_DestroyTexture(Message);
+    TTF_CloseFont(font);
+    TTF_Quit();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
@@ -120,7 +142,7 @@ uint64_t rdtsc()
    return ( (uint64_t)lo)|( ((uint64_t)hi)<<32 );
 }
 
-void CalcColor(ColorRGB_t* pixel_color, size_t n)
+void CalcColor(SDL_Color* pixel_color, size_t n)
 {
     if (!pixel_color) return;
     // Normalize the value to the range [0, 1]
@@ -146,7 +168,7 @@ bool DrawMandelbrot(double* x_center, double* y_center, double* scale)
     double xy = 0;
     double r2 = 0;
     double r2max = RADIUS;
-    ColorRGB_t pixel_color = {};
+    SDL_Color pixel_color = {};
     bool color_flag = 0;
     for (int y_i = 0; y_i < SCREEN_HEIGHT; y_i++)
     {
@@ -189,4 +211,13 @@ bool DrawMandelbrot(double* x_center, double* y_center, double* scale)
         }
     }
     return 1;
+}
+
+void CleanBuffer(char* buff, size_t leng)
+{
+    size_t pos = 0;
+    while ((pos < leng) && (buff[pos] != '\0'))
+    {
+        buff[pos] = '\0';
+    }
 }
