@@ -47,7 +47,7 @@ abba-best
 
 Project of testing optimization on Mandelbrot set visualization.
 
-*System*: Linux x86-64
+*System*: Linux x86-64, CPU: Intel Core i5-12450H, 3MHz
 
 *Drawing*:
 
@@ -71,15 +71,15 @@ I have 3 versions of code:
 
 |Version|GCC `-O3`|AVX `-msse2 -mavx`|FPS|
 |-------|---------|------------------|---|
-|   1   |   off   |       off        |3.9|
-|   1   |   on    |       off        |7.3|
-|   1   |   on    |       on         |7.3|
-|   2   |   off   |       off        |0.44|
-|   2   |   on    |       off        |2.9|
-|   2   |   on    |       on         |2.9|
-|   3   |   off   |       off        |6  |
-|   3   |   on    |       off        |14.5|
-|   3   |   on    |       on         |14.9|
+|   1   |   off   |       off        |8|
+|   1   |   on    |       off        |15|
+|   1   |   on    |       on         |15|
+|   2   |   off   |       off        |0.9|
+|   2   |   on    |       off        |5.8|
+|   2   |   on    |       on         |6|
+|   3   |   off   |       off        |13|
+|   3   |   on    |       off        |29
+|   3   |   on    |       on         |31|
 
 
 ## Settings
