@@ -69,28 +69,20 @@ I have 3 versions of code:
 
 *Tests & Results*:
 
-|Version|GCC `-O3`|VECTOR `-mavx2 -mavx`|FPS|
-|-------|---------|------------------|---|
-|   1   |   off   |       off        |9.8|
-|   1   |   on    |       off        |19|
-|   1   |   off   |       on         |9|
-|   1   |   on    |       on         |19|
-|   2   |   off   |       off        |4.5|
-|   2   |   on    |       off        |28|
-|   2   |   off   |       on         |4.6|
-|   2   |   on    |       on         |28|
-|   3   |   off   |       on         |21|
-|   3   |   on    |       on         |34|
+|Version|GCC `-O3`|FPS|
+|-------|---------|---|
+|   1   |   off   |4|
+|   1   |   on    |7.5|
+|   2   |   off   |1.6|
+|   2   |   on    |9.8|
+|   3   |   off   |11|
+|   3   |   on    |28|
 
 *Conclusion*:
 
 Comparing 3 types of code: 1 - nake algotithm, 2 - with merging 4 pixels in loop, 3 - with vectorization AVX/AVX2.
 
-- 1: Options of vectorization have no affect. Optimization from gcc increase fps by 2 times from 9 to 19
-- 2: Options of vectorization have no affect. Optimization from gcc increase fps by 6 times from 4.5 to 28.
-- 3: With vectorization, optimization increase fps from 21 to 34.
-
-To sum up, v.3 with vectorization have highest result 34 fps & without - 28
+To sum up, v.3 with vectorization have highest result 28 fps & without - 7.5. Boost in 4 times is insane!
 
 ## Settings
 

@@ -1,7 +1,7 @@
 SRC_C_EXT 	= .cpp
 
 INTRINCS = -msse4.1 -msse4.2 -mavx2 -mavx
-OPTIMIZE = -O0
+OPTIMIZE = -O3
 
 LDFLAGS = -lSDL2 -lSDL2_ttf
 CFLAGS = -I/usr/include/SDL2 -D_REENTRANT $(INTRINCS) $(OPTIMIZE)
@@ -11,9 +11,12 @@ SRC_C   = ./src_c
 OBJ     = ./obj
 BIN     = ./bin
 OUT     = $(BIN)
-NAME	= /mb2_no_opt_on_avx
+NAME1   = /mandelbrot_opt_on
+NAME2   = /mandelbrot_opt_off
 
-SOURCES_C 		= $(SRC_C)/main2.cpp
+NAME	= /mandelbrot_opt_off
+
+SOURCES_C 		= $(SRC_C)/main.cpp
 OBJFILES_C		= $(patsubst $(SRC_C)/%,$(OBJ)/%,$(SOURCES_C:$(SRC_C_EXT)=.o))
 
 $(OUT)$(NAME): $(OBJFILES_C)	#Linking with GCC use -no-pie
@@ -27,5 +30,7 @@ clean:
 	rm -f $(OBJ)/*.o
 
 .PHONY: run
-run:
-	$(OUT)$(NAME)	
+run_opt_on:
+	$(OUT)$(NAME1)	
+run_opt_off:
+	$(OUT)$(NAME2)	
