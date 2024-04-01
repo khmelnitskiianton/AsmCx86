@@ -52,7 +52,7 @@ Project of testing optimization on Mandelbrot set visualization.
 *Drawing*:
 
 - I draw Mandelbrot set with SDL2 on C
-- Visualization has interface: &#8592;,&#8593;,&#8594;,&#8595; for moving and -,+ for zoom  set
+- Visualization has interface: &#8592;,&#8593;,&#8594;,&#8595; for moving and -,+ for zoom set. Also Window can change size.
 - In the angle drawing actual FPS of rendering set.
 
 *Optimiztion:*
@@ -69,18 +69,28 @@ I have 3 versions of code:
 
 *Tests & Results*:
 
-|Version|GCC `-O3`|AVX `-msse2 -mavx`|FPS|
+|Version|GCC `-O3`|VECTOR `-mavx2 -mavx`|FPS|
 |-------|---------|------------------|---|
-|   1   |   off   |       off        |8|
-|   1   |   on    |       off        |15|
-|   1   |   on    |       on         |15|
-|   2   |   off   |       off        |0.9|
-|   2   |   on    |       off        |5.8|
-|   2   |   on    |       on         |6|
-|   3   |   off   |       off        |13|
-|   3   |   on    |       off        |29
-|   3   |   on    |       on         |31|
+|   1   |   off   |       off        |9.8|
+|   1   |   on    |       off        |19|
+|   1   |   off   |       on         |9|
+|   1   |   on    |       on         |19|
+|   2   |   off   |       off        |4.5|
+|   2   |   on    |       off        |28|
+|   2   |   off   |       on         |4.6|
+|   2   |   on    |       on         |28|
+|   3   |   off   |       on         |21|
+|   3   |   on    |       on         |34|
 
+*Conclusion*:
+
+Comparing 3 types of code: 1 - nake algotithm, 2 - with merging 4 pixels in loop, 3 - with vectorization AVX/AVX2.
+
+- 1: Options of vectorization have no affect. Optimization from gcc increase fps by 2 times from 9 to 19
+- 2: Options of vectorization have no affect. Optimization from gcc increase fps by 6 times from 4.5 to 28.
+- 3: With vectorization, optimization increase fps from 21 to 34.
+
+To sum up, v.3 with vectorization have highest result 34 fps & without - 28
 
 ## Settings
 

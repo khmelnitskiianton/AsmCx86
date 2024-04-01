@@ -3,14 +3,15 @@
 #include <SDL2/SDL.h>
 #include "SDL_ttf.h"
 #include <math.h>
+#include <x86intrin.h>
   
 const size_t SIZE = 4;
-const int SCREEN_WIDTH  = 800;      //1920;
-const int SCREEN_HEIGHT = 600;       //1080;
+      int SCREEN_WIDTH  = 800;      //1920;
+      int SCREEN_HEIGHT = 600;       //1080;
 const size_t N_MAX      = 100;       //256;
 const float dx          = 1/300.f;   //1/800.f;
 const float dy          = 1/300.f;   //1/800.f; 
-const float dscale      = 1/80.f;    //1/100.f;
+const float dscale      = 1.2f;    //1/100.f;
 const float RADIUS      = 100;       //100.f;
 const float X_SHIFT     = -0.55f;     //-0.55;
 const size_t SIZE_OF_BUFFER = 100;
@@ -22,8 +23,8 @@ const uint64_t clock_speed_spu = 2000000000;
 int         sdl_ctor();
 int         sdl_dtor();
 uint64_t    rdtsc();
-bool        DrawMandelbrot(float* x_center, float* y_center, float* scale);
-void        CalcColor(SDL_Color* pixel_color, size_t n);
+bool        DrawMandelbrot(float* x_center, float* y_center, float* scale, SDL_Color* colors);
+void        CalcAllColors(SDL_Color* colors);
 void        CleanBuffer(char* buff, size_t leng);
 
 SDL_Window   *window = NULL;
@@ -53,9 +54,13 @@ int main() {
     Message_rect.w = WIDTH_TEXT; // controls the width of the rect
     Message_rect.h = HEIGHT_TEXT; // controls the height of the rect
     char fps_buffer[SIZE_OF_BUFFER] = {};
+        
+    SDL_Color colors[N_MAX+2] = {};
+    CalcAllColors(colors);
+
     while (run)
     {
-        t1 = rdtsc();
+        t1 = __rdtsc();
         //Process Keys
         while(SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
@@ -63,12 +68,16 @@ int main() {
                 break;
             }
             if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_UP)     y_center += dy;
-                if (event.key.keysym.sym == SDLK_DOWN)   y_center -= dy;
-                if (event.key.keysym.sym == SDLK_RIGHT)  x_center -= dx;
-                if (event.key.keysym.sym == SDLK_LEFT)   x_center += dx;
-                if (event.key.keysym.sym == SDLK_EQUALS) scale -= dscale;
-                if (event.key.keysym.sym == SDLK_MINUS)  scale += dscale;
+                if (event.key.keysym.sym == SDLK_UP)     y_center += dy*scale;
+                if (event.key.keysym.sym == SDLK_DOWN)   y_center -= dy*scale;
+                if (event.key.keysym.sym == SDLK_RIGHT)  x_center -= dx*scale;
+                if (event.key.keysym.sym == SDLK_LEFT)   x_center += dx*scale;
+                if (event.key.keysym.sym == SDLK_EQUALS) scale /= dscale;
+                if (event.key.keysym.sym == SDLK_MINUS)  scale *= dscale;
+            }
+            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                SCREEN_WIDTH  = event.window.data1;
+                SCREEN_HEIGHT = event.window.data2;
             }
         }
         //clear
@@ -76,12 +85,12 @@ int main() {
         SDL_FreeSurface(surfaceMessage);
         CleanBuffer(fps_buffer, SIZE_OF_BUFFER);
         //body
-        if (!DrawMandelbrot(&x_center, &y_center, &scale))
+        if (!DrawMandelbrot(&x_center, &y_center, &scale, colors))
         {
             run = false;
         }
         //render
-        t2 = rdtsc();
+        t2 = __rdtsc();
         float fps_float = (float)clock_speed_spu / (float)(t2 - t1);
         snprintf(fps_buffer, SIZE_OF_BUFFER,"FPS: %.2lf", fps_float);
         surfaceMessage = TTF_RenderText_Solid(font, fps_buffer, color_text); 
@@ -136,30 +145,24 @@ int sdl_dtor()
     return 0;
 }
 
-
-uint64_t rdtsc()
+void CalcAllColors(SDL_Color* colors)
 {
-   uint32_t hi, lo;
-   __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
-   return ( (uint64_t)lo)|( ((uint64_t)hi)<<32 );
+    for (size_t i = 0; i < (N_MAX+2); i++)
+    {
+        // Normalize the value to the range [0, 1]
+        float normalized = -(float)i / (float)N_MAX;
+        // Use sine waves to create a colorful gradient with smooth transitions
+        float r_n = (float) sin(2 * M_PI * normalized * 4.0 + M_PI / 4);
+        float g_n = (float) sin(2 * M_PI * normalized * 8.0 + M_PI / 8);
+        float b_n = (float) sin(2 * M_PI * normalized * 16.0 + M_PI / 16);
+        // Convert to the range [0, 255]
+        colors[i].r = (Uint8) ((r_n + 1) * 127.5);
+        colors[i].g = (Uint8) ((g_n + 1) * 127.5);
+        colors[i].b = (Uint8) ((b_n + 1) * 127.5);
+    }
 }
 
-void CalcColor(SDL_Color* pixel_color, size_t n)
-{
-    if (!pixel_color) return;
-    // Normalize the value to the range [0, 1]
-    float normalized = (float)n / (float)N_MAX;
-    // Use sine waves to create a colorful gradient with smooth transitions
-    float r_n = (float) sin(2 * M_PI * normalized * 4.0 + M_PI / 4);
-    float g_n = (float) sin(2 * M_PI * normalized * 8.0 + M_PI / 8);
-    float b_n = (float) sin(2 * M_PI * normalized * 16.0 + M_PI / 16);
-    // Convert to the range [0, 255]
-    pixel_color->r = (Uint8) ((r_n + 1) * 127.5);
-    pixel_color->g = (Uint8) ((g_n + 1) * 127.5);
-    pixel_color->b = (Uint8) ((b_n + 1) * 127.5);
-}
-
-bool DrawMandelbrot(float* x_center, float* y_center, float* scale)
+bool DrawMandelbrot(float* x_center, float* y_center, float* scale, SDL_Color* colors)
 {
     float x_0 = 0;
     float y_0 = 0;
@@ -173,7 +176,6 @@ bool DrawMandelbrot(float* x_center, float* y_center, float* scale)
     int mask = 0;
     float r2max = RADIUS;
     bool color_flag[SIZE] = {};
-    SDL_Color pixel_color = {};
     for (int y_i = 0; y_i < SCREEN_HEIGHT; y_i++)
     {
         //check for close
@@ -213,8 +215,7 @@ bool DrawMandelbrot(float* x_center, float* y_center, float* scale)
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 if (color_flag[j])
                 {
-                    CalcColor(&pixel_color, n[j]);
-                    SDL_SetRenderDrawColor(renderer, pixel_color.r, pixel_color.g, pixel_color.b, 255);
+                    SDL_SetRenderDrawColor(renderer, colors[n[j]].r, colors[n[j]].g, colors[n[j]].b, 255);
                 }
                 SDL_RenderDrawPoint(renderer, x_i+(int)j, y_i);
             }
