@@ -45,6 +45,8 @@ abba-best
 ```
 ## Mandelbrot set
 
+[Main Code](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Mandelbrot/src_c/main.cpp)
+
 Project of testing optimization on Mandelbrot set visualization.
 
 *System*: Linux x86-64, CPU: Intel Core i5-12450H, 3MHz
@@ -59,9 +61,11 @@ Project of testing optimization on Mandelbrot set visualization.
 
 I have 3 versions of code:
 
-1. Naked algorithm [main1.cpp](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Mandelbrot/src_c/main1.cpp)
-2. Algorithm using merging 4 pixel in line in one operation [main2.cpp](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Mandelbrot/src_c/main2.cpp)
-3. Using vectorization AVX and SIMD [main3.cpp](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Mandelbrot/src_c/main3.cpp)
+1. Naked algorithm `DrawMandelbrot1`
+2. Algorithm using merging 4 pixel in line in one operation `DrawMandelbrot2`
+3. Using vectorization AVX/AVX2 `DrawMandelbrot3`
+
+Use: press 1,2,3 while running program and see different fps.
 
 *Example of vizualization*:
 
@@ -82,7 +86,7 @@ I have 3 versions of code:
 
 Comparing 3 types of code: 1 - nake algotithm, 2 - with merging 4 pixels in loop, 3 - with vectorization AVX/AVX2.
 
-To sum up, v.3 with vectorization have highest result 28 fps & without - 7.5. Boost in 4 times is insane!
+To sum up, v.3 with vectorization have highest result 28 fps & without - 7.5. Boost in 4 times is insane with using -03 gcc & AVX2!
 
 ## Settings
 
