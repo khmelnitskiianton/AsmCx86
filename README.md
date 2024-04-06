@@ -78,7 +78,7 @@ I have 3 versions of code:
 
 *Example of vizualization*:
 
-<img src="https://github.com/khmelnitskiianton/AsmCx86/assets/142332024/fcca1039-4551-4c82-9f52-6b5cb45d2cb9" width=60%>
+<img src="https://github.com/khmelnitskiianton/AsmCx86/assets/142332024/fcca1039-4551-4c82-9f52-6b5cb45d2cb9" width=80%>
 
 *Tests & Results*:
 
