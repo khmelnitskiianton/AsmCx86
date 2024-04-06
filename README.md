@@ -49,44 +49,59 @@ abba-best
 
 Project of testing optimization on Mandelbrot set visualization.
 
-*System*: Linux x86-64, CPU: Intel Core i5-12450H, 3MHz
+*System & Compilier*: Linux x86-64, CPU: Intel Core i5-12450H, 3MHz, Compilier: x86-64 GCC 13.2
 
-*Drawing*:
+*Compilation*:
+
+[Makefile](https://github.com/khmelnitskiianton/AsmCx86/blob/main/Mandelbrot/Makefile)
+
+`make` - to compile, set `OPTIMIZE = -O3` & `NAME = /mandelbrot_opt_on` in Makefile.
+
+`make run_opt_on`  - running with -O3
+
+`make run_opt_off` - running with -O0
+
+*Drawing set*:
 
 - I draw Mandelbrot set with SDL2 on C
 - Visualization has interface: &#8592;,&#8593;,&#8594;,&#8595; for moving and -,+ for zoom set. Also Window can change size.
+- Press 1,2,3 while running program and see diffrent types of optimization & different fps.
 - In the angle drawing actual FPS of rendering set.
 
 *Optimiztion:*
 
 I have 3 versions of code:
 
-1. Naked algorithm `DrawMandelbrot1`
-2. Algorithm using merging 4 pixel in line in one operation `DrawMandelbrot2`
-3. Using vectorization AVX/AVX2 `DrawMandelbrot3`
-
-Use: press 1,2,3 while running program and see different fps.
+1. Naive algorithm - just processing every pixel on the screen: `DrawMandelbrot1()`
+2. Algorithm using merging 8 pixel in many loops:               `DrawMandelbrot2()` 
+3. Using vectorization & SIMD(AVX/AVX2):                        `DrawMandelbrot3()`
 
 *Example of vizualization*:
 
-<img src="https://github.com/khmelnitskiianton/AsmCx86/assets/142332024/38b9466e-ba93-45fc-8627-9c8a55e54ce4" width=70%>
+<img src="https://github.com/khmelnitskiianton/AsmCx86/assets/142332024/fcca1039-4551-4c82-9f52-6b5cb45d2cb9" width=60%>
 
 *Tests & Results*:
 
 |Version|GCC `-O3`|FPS|
 |-------|---------|---|
-|   1   |   off   |4|
-|   1   |   on    |7.5|
-|   2   |   off   |1.6|
-|   2   |   on    |9.8|
-|   3   |   off   |11|
-|   3   |   on    |28|
+|   1   |   off   |8.5|
+|   1   |   on    |19|
+|   2   |   off   |3.5|
+|   2   |   on    |25|
+|   3   |   off   |24.6|
+|   3   |   on    |115|
+
+*Analysing*:
+
+- Naive Version: GCC optimizes just algorithm on C and gives 8.5 &#8594; 19 (x2 increase). 
+- Merging Version: GCC optimizes merging processing pixels using many loops and gives 3.5 &#8594; 25 (x8 increase). Comparing with naive version we get 19 &#8594; 25 (x1.3 increase). Explanation: GCC can optimize loops and process merging pixels is faster than process every pixel.
+- Vectorized Version: GCC optimizes vectorization and gives 24.6 &#8594; 115 (x4.7 increase). Comparing with naive version we get with -O3 19 &#8594; 115 (x6 increase). Explanation: using vectors and SIMD can speed up processing 8 pixels in one time. GCC optimizes vectorization that gives enormous effect. Analysing `DrawMandelbrot3()` - vectorization version in [GodBolt](https://godbolt.org/) find out that -O3 minimizes amout of operations 217 &#8594; 147 by using many optimizations like changing loops to table of jumps.
 
 *Conclusion*:
 
-Comparing 3 types of code: 1 - nake algotithm, 2 - with merging 4 pixels in loop, 3 - with vectorization AVX/AVX2.
+Optimization based on SIMD & Compilier optimization gives greate spped up in processing data
 
-To sum up, v.3 with vectorization have highest result 28 fps & without - 7.5. Boost in 4 times is insane with using -03 gcc & AVX2!
+In drawing mandelbrot set we see how SIMD & GCC -O3 can increase FPS from 19 to 115 (x6).
 
 ## Settings
 

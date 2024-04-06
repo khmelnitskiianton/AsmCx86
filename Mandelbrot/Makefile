@@ -3,6 +3,8 @@ SRC_C_EXT 	= .cpp
 INTRINCS = -msse4.1 -msse4.2 -mavx2 -mavx
 OPTIMIZE = -O3
 
+NAME	= /mandelbrot_opt_on
+
 LDFLAGS = -lSDL2 -lSDL2_ttf
 CFLAGS = -I/usr/include/SDL2 -D_REENTRANT $(INTRINCS) $(OPTIMIZE)
 
@@ -13,8 +15,6 @@ BIN     = ./bin
 OUT     = $(BIN)
 NAME1   = /mandelbrot_opt_on
 NAME2   = /mandelbrot_opt_off
-
-NAME	= /mandelbrot_opt_off
 
 SOURCES_C 		= $(SRC_C)/main.cpp
 OBJFILES_C		= $(patsubst $(SRC_C)/%,$(OBJ)/%,$(SOURCES_C:$(SRC_C_EXT)=.o))

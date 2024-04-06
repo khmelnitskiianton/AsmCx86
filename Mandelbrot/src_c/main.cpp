@@ -7,32 +7,34 @@
 #include <immintrin.h>
 #include <x86intrin.h>
 
+const char* font_path = "/usr/share/fonts/truetype/firacode/FiraCode-Bold.ttf";
+
+const int SCREEN_WIDTH  = 1000;
+const int SCREEN_HEIGHT = 800;
 const size_t SIZE = 8;
-      int SCREEN_WIDTH  = 1000;
-      int SCREEN_HEIGHT = 800;
 const size_t N_MAX      = 100;
 const float dx          = 1/400.f; 
 const float dy          = 1/400.f; 
 const float dscale      = 1.2f;   
 const float RADIUS      = 100;     
 const float X_SHIFT     = -0.55f;  
-const size_t SIZE_OF_BUFFER = 100;
-
-int number_options = 3;
+const size_t SIZE_OF_BUFFER = 30;
+const unsigned long long clock_speed_spu = 3000000000;
 
 const __m256 r2max      = _mm256_set1_ps (RADIUS);
 const __m256 _76543210  = _mm256_set_ps  (7.f, 6.f, 5.f, 4.f, 3.f, 2.f, 1.f, 0.f);
 const __m256 nmax       = _mm256_set1_ps (N_MAX);
 
-const uint64_t clock_speed_spu = 3000000000;
+int number_options = 3;
 
 int         sdl_ctor();
 int         sdl_dtor();
-bool        DrawMandelbrot1(float* x_center, float* y_center, float* scale, SDL_Color* colors, SDL_Surface *main_surface);
-bool        DrawMandelbrot2(float* x_center, float* y_center, float* scale, SDL_Color* colors, SDL_Surface *main_surface);
-bool        DrawMandelbrot3(float* x_center, float* y_center, float* scale, SDL_Color* colors, SDL_Surface *main_surface);
 void        CalcAllColors(SDL_Color* colors);
 void        CleanBuffer(char* buff, size_t leng);
+
+bool        DrawMandelbrot1(float* x_center, float* y_center, float* scale, SDL_Color* colors);
+bool        DrawMandelbrot2(float* x_center, float* y_center, float* scale, SDL_Color* colors);
+bool        DrawMandelbrot3(float* x_center, float* y_center, float* scale, SDL_Color* colors);
 
 SDL_Window   *window = NULL;
 SDL_Event    event;
@@ -52,14 +54,14 @@ int main() {
     bool run = true;
     uint64_t t1 = 0;
     uint64_t t2 = 0;
+    char fps_buffer[SIZE_OF_BUFFER] = {};    
+
     SDL_Color color_text = {255, 255, 255, 255};
     SDL_Color colors[N_MAX+1] = {};
+    SDL_Rect Message_rect;  //create a rect
+    Message_rect.x = 0;     //controls the rect's x coordinate 
+    Message_rect.y = 0;     // controls the rect's y coordinte
 
-    SDL_Rect Message_rect; //create a rect
-    Message_rect.x = 0;  //controls the rect's x coordinate 
-    Message_rect.y = 0; // controls the rect's y coordinte
-    char fps_buffer[SIZE_OF_BUFFER] = {};
-    
     CalcAllColors(colors);
 
     while (run)
@@ -83,11 +85,11 @@ int main() {
                 if (event.key.keysym.sym == SDLK_2)         number_options = 2;
                 if (event.key.keysym.sym == SDLK_3)         number_options = 3;
             }
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {
-                SCREEN_WIDTH  = event.window.data1;
-                SCREEN_HEIGHT = event.window.data2;
-                surfaceMessage = SDL_GetWindowSurface(window);
-            }
+            //if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {
+            //    SCREEN_WIDTH  = event.window.data1;
+            //    SCREEN_HEIGHT = event.window.data2;
+            //    surfaceMessage = SDL_GetWindowSurface(window);
+            //}
         }
         CleanBuffer(fps_buffer, SIZE_OF_BUFFER);
         //body
@@ -96,19 +98,19 @@ int main() {
         switch (number_options)
         {
             case 1:
-            if (!DrawMandelbrot1(&x_center, &y_center, &scale, colors, windowSurface))
+            if (!DrawMandelbrot1(&x_center, &y_center, &scale, colors))
             {
                 run = false;
             }
             break;
             case 2:
-            if (!DrawMandelbrot2(&x_center, &y_center, &scale, colors, windowSurface))
+            if (!DrawMandelbrot2(&x_center, &y_center, &scale, colors))
             {
                 run = false;
             }
             break;
             case 3:
-            if (!DrawMandelbrot3(&x_center, &y_center, &scale, colors, windowSurface))
+            if (!DrawMandelbrot3(&x_center, &y_center, &scale, colors))
             {
                 run = false;
             }
@@ -118,8 +120,8 @@ int main() {
         //render
         t2 = __rdtsc();
         float fps_float = (float)clock_speed_spu / (float)(t2 - t1);
-        snprintf(fps_buffer, SIZE_OF_BUFFER, "FPS: %.1lf", fps_float);
         t1 = __rdtsc();
+        snprintf(fps_buffer, SIZE_OF_BUFFER, "FPS: %.1lf", fps_float);
         surfaceMessage = TTF_RenderText_Solid(font, fps_buffer, color_text);
         SDL_BlitSurface(surfaceMessage, NULL, windowSurface, &Message_rect);
         SDL_FreeSurface(surfaceMessage);
@@ -144,7 +146,7 @@ int sdl_ctor()
     // Calculate the center position for the window
     const int windowPosX = (screenWidth - SCREEN_WIDTH)/2;
     const int windowPosY = (screenHeight - SCREEN_HEIGHT)/2;
-    window = SDL_CreateWindow(  "MANDELBROT", 
+    window = SDL_CreateWindow(  "MANDELBROT SET", 
                                 windowPosX, windowPosY,
                                 SCREEN_WIDTH, SCREEN_HEIGHT, 
                                 SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
@@ -153,7 +155,7 @@ int sdl_ctor()
     }
     windowSurface = SDL_GetWindowSurface(window);
     TTF_Init();
-    font = TTF_OpenFont("/usr/share/fonts/truetype/firacode/FiraCode-Bold.ttf", 30);
+    font = TTF_OpenFont(font_path, 30);
 
     return 0;
 }
@@ -185,7 +187,6 @@ void CalcAllColors(SDL_Color* colors)
     }
 }
 
-
 void CleanBuffer(char* buff, size_t leng)
 {
     size_t pos = 0;
@@ -195,8 +196,19 @@ void CleanBuffer(char* buff, size_t leng)
     }
 }
 
-bool DrawMandelbrot3(float* x_center, float* y_center, float* scale, SDL_Color* colors, SDL_Surface* main_surface)
+
+bool DrawMandelbrot1(float* x_center, float* y_center, float* scale, SDL_Color* colors)
 {
+    float x_0 = 0;
+    float y_0 = 0;
+    float x = 0;
+    float y = 0;
+    float x2 = 0;
+    float y2 = 0;
+    float xy = 0;
+    float r2 = 0;
+    float r2max = RADIUS;
+    bool color_flag = 0;
     for (int y_i = 0; y_i < SCREEN_HEIGHT; y_i++)
     {
         //check for close
@@ -204,46 +216,40 @@ bool DrawMandelbrot3(float* x_center, float* y_center, float* scale, SDL_Color* 
             return 0;
         }
         //set line with height = y0 and x - counting
-        float x_0 = *x_center + (                    - (float)SCREEN_WIDTH *(*scale)/2)*dx; 
-        float y_0 = *y_center + ((float)y_i*(*scale) - (float)SCREEN_HEIGHT*(*scale)/2)*dy;
-        for (int x_i = 0; x_i < SCREEN_WIDTH; x_i += 8 , x_0 += 8*dx*(*scale))
+        x_0 = *x_center + (                    - (float)SCREEN_WIDTH *(*scale)/2)*dx; 
+        y_0 = *y_center + ((float)y_i*(*scale) - (float)SCREEN_HEIGHT*(*scale)/2)*dy;
+        for (int x_i = 0; x_i < SCREEN_WIDTH; x_i++ , x_0 += dx*(*scale))
         {
+            color_flag = 0;
             //counting (x,y)
-            __m256 x_0_arr = _mm256_add_ps (_mm256_set1_ps (x_0), _mm256_mul_ps (_76543210, _mm256_set1_ps (dx*(*scale))));
-            __m256 y_0_arr =                                                   _mm256_set1_ps (y_0);
-            __m256 x = x_0_arr;
-            __m256 y = y_0_arr;
-            __m256i n = _mm256_setzero_si256();
-            __m256 cmp = _mm256_setzero_ps();
-            for (size_t m = 0; m < N_MAX; m++)
+            x = x_0;
+            y = y_0;
+            //check if (x,y) not run away from circle
+            size_t n = 0;
+            for (; n < N_MAX; n++)
             {
-                __m256 x2 = _mm256_mul_ps (x, x);
-                __m256 y2 = _mm256_mul_ps (y, y);
-                __m256 xy = _mm256_mul_ps (x, y);
-                __m256 r2 = _mm256_add_ps (x2,y2);
-                cmp = _mm256_cmp_ps (r2, r2max, _CMP_LE_OS);
-                int mask = 0; 
-                mask = _mm256_movemask_ps (cmp);
-                if (!mask) break;
-                n = _mm256_sub_epi32 (n, _mm256_castps_si256(cmp)); 
-                x = _mm256_add_ps (_mm256_sub_ps(x2,y2), x_0_arr);
-                y = _mm256_add_ps (_mm256_add_ps(xy,xy), y_0_arr);
-            }   
-            for (size_t j = 0; j < SIZE; j++)
-            {
-                uint* n_ptr   = (uint*) &n;
-                int* cmp_ptr = (int*) &cmp;
-                if (!cmp_ptr[j])
+                x2 = x * x;
+                y2 = y * y;
+                xy = x * y;
+                r2 = (x2 + y2);
+                if (r2 > r2max) 
                 {
-                    ((int*)(main_surface->pixels))[y_i * SCREEN_WIDTH + x_i + j] = *((int*)&colors[n_ptr[j]]);
-                }
+                    color_flag = 1;
+                    break;
+                }   
+                x = x2 - y2 + x_0;
+                y = 2 * xy  + y_0;  
+            }
+            if (color_flag)
+            {
+                ((int*)(windowSurface->pixels))[y_i * SCREEN_WIDTH + x_i] = *((int*)&colors[n]);
             }
         }
     }
     return 1;
 }
 
-bool DrawMandelbrot2(float* x_center, float* y_center, float* scale, SDL_Color* colors,  SDL_Surface* main_surface)
+bool DrawMandelbrot2(float* x_center, float* y_center, float* scale, SDL_Color* colors)
 {
     float x_0 = 0;
     float y_0 = 0;
@@ -295,7 +301,7 @@ bool DrawMandelbrot2(float* x_center, float* y_center, float* scale, SDL_Color* 
             {
                 if (color_flag[j])
                 {
-                    ((int*)(main_surface->pixels))[y_i * SCREEN_WIDTH + x_i + j] = *((int*)&colors[n[j]]);
+                    ((int*)(windowSurface->pixels))[y_i * SCREEN_WIDTH + x_i + j] = *((int*)&colors[n[j]]);
                 }
             }
         }
@@ -303,18 +309,8 @@ bool DrawMandelbrot2(float* x_center, float* y_center, float* scale, SDL_Color* 
     return 1;
 }
 
-bool DrawMandelbrot1(float* x_center, float* y_center, float* scale, SDL_Color* colors, SDL_Surface* main_surface)
+bool DrawMandelbrot3(float* x_center, float* y_center, float* scale, SDL_Color* colors)
 {
-    float x_0 = 0;
-    float y_0 = 0;
-    float x = 0;
-    float y = 0;
-    float x2 = 0;
-    float y2 = 0;
-    float xy = 0;
-    float r2 = 0;
-    float r2max = RADIUS;
-    bool color_flag = 0;
     for (int y_i = 0; y_i < SCREEN_HEIGHT; y_i++)
     {
         //check for close
@@ -322,33 +318,39 @@ bool DrawMandelbrot1(float* x_center, float* y_center, float* scale, SDL_Color* 
             return 0;
         }
         //set line with height = y0 and x - counting
-        x_0 = *x_center + (                    - (float)SCREEN_WIDTH *(*scale)/2)*dx; 
-        y_0 = *y_center + ((float)y_i*(*scale) - (float)SCREEN_HEIGHT*(*scale)/2)*dy;
-        for (int x_i = 0; x_i < SCREEN_WIDTH; x_i++ , x_0 += dx*(*scale))
+        float x_0 = *x_center + (                    - (float)SCREEN_WIDTH *(*scale)/2)*dx; 
+        float y_0 = *y_center + ((float)y_i*(*scale) - (float)SCREEN_HEIGHT*(*scale)/2)*dy;
+        for (int x_i = 0; x_i < SCREEN_WIDTH; x_i += 8 , x_0 += 8*dx*(*scale))
         {
-            color_flag = 0;
             //counting (x,y)
-            x = x_0;
-            y = y_0;
-            //check if (x,y) not run away from circle
-            size_t n = 0;
-            for (; n < N_MAX; n++)
+            __m256 x_0_arr = _mm256_add_ps (_mm256_set1_ps (x_0), _mm256_mul_ps (_76543210, _mm256_set1_ps (dx*(*scale))));
+            __m256 y_0_arr =                                                    _mm256_set1_ps (y_0);
+            __m256 x = x_0_arr; 
+            __m256 y = y_0_arr;
+            __m256i n = _mm256_setzero_si256();
+            __m256 cmp = _mm256_setzero_ps();
+            for (size_t m = 0; m < N_MAX; m++)
             {
-                x2 = x * x;
-                y2 = y * y;
-                xy = x * y;
-                r2 = (x2 + y2);
-                if (r2 > r2max) 
+                __m256 x2 = _mm256_mul_ps (x, x);
+                __m256 y2 = _mm256_mul_ps (y, y);
+                __m256 xy = _mm256_mul_ps (x, y);
+                __m256 r2 = _mm256_add_ps (x2,y2);
+                cmp = _mm256_cmp_ps (r2, r2max, _CMP_LE_OS);
+                int mask = 0; 
+                mask = _mm256_movemask_ps (cmp);
+                if (!mask) break;
+                n = _mm256_sub_epi32 (n, _mm256_castps_si256(cmp)); 
+                x = _mm256_add_ps (_mm256_sub_ps(x2,y2), x_0_arr);
+                y = _mm256_add_ps (_mm256_add_ps(xy,xy), y_0_arr);
+            }   
+            for (size_t j = 0; j < SIZE; j++)
+            {
+                uint* n_ptr   = (uint*) &n;
+                int* cmp_ptr = (int*) &cmp;
+                if (!cmp_ptr[j])
                 {
-                    color_flag = 1;
-                    break;
-                }   
-                x = x2 - y2 + x_0;
-                y = 2 * xy  + y_0;  
-            }
-            if (color_flag)
-            {
-                ((int*)(main_surface->pixels))[y_i * SCREEN_WIDTH + x_i] = *((int*)&colors[n]);
+                    ((int*)(windowSurface->pixels))[y_i * SCREEN_WIDTH + x_i + j] = *((int*)&colors[n_ptr[j]]);
+                }
             }
         }
     }
