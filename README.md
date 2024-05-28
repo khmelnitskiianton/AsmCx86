@@ -1,4 +1,10 @@
-## Printf32()
+# AsmCx86
+Projects are writen on C+Assembler x86-64
+
+1. [Printf32()](#printf32) - simple realization of printf() on NASM
+2. [Mandelbrot set](#mandelbrot-set) - vizualization of Mandelbrot set on SDL,with measuring fps and application AVX instruction for optimization(searching for speed of rendering frame)
+
+## Printf32
 
 Simple version of printf() on NASM on Linux x86-64:
 
