@@ -42,17 +42,91 @@ You need to have folder `./bin`, `./src_c`, `./obj`
 - Press `1`,`2`,`3` while running program and see diffrent types of optimization & different fps.
 - In the angle drawing actual FPS of rendering set.
 
+**Example of vizualization:**
+
+<img src="https://github.com/khmelnitskiianton/AsmCx86/assets/142332024/2bead766-15ab-4ba9-95d9-27c5e62803d2" width=80%>
+
 **Optimiztion:**
 
 I have 3 versions of code:
 
 1. Naive algorithm - just processing every pixel on the screen: `DrawMandelbrot1()`
+
+```cpp
+//counting (x,y)
+x = x_0;
+y = y_0;
+//check if (x,y) not run away from circle
+size_t n = 0;
+for (; n < N_MAX; n++)
+{
+  x2 = x * x;
+  y2 = y * y;
+  xy = x * y;
+  r2 = (x2 + y2);
+  if (r2 > r2max) 
+  {
+    color_flag = 1;
+    break;
+  }   
+  x = x2 - y2 + x_0;
+  y = 2 * xy  + y_0;
+}
+```
+
 2. Algorithm using merging 8 pixel in many loops:               `DrawMandelbrot2()` 
+
+```cpp
+//counting (x,y)
+for (size_t i = 0; i < SIZE; i++) color_flag[i] = 0;
+for (size_t i = 0; i < SIZE; i++) x_0_arr[i] = x_0 + dx*((float)i)*(*scale);
+for (size_t i = 0; i < SIZE; i++) x[i] = x_0_arr[i];
+for (size_t i = 0; i < SIZE; i++) y[i] = y_0;
+//check if (x,y) not run away from circle
+size_t n[SIZE] = {0,0,0,0};
+for (size_t m = 0; m < N_MAX; m++)
+{
+    int cmp[SIZE] = {0,0,0,0};
+    for (size_t k = 0; k < SIZE; k++)    x2[k] = x[k] * x[k];
+    for (size_t k = 0; k < SIZE; k++)    y2[k] = y[k] * y[k];
+    for (size_t k = 0; k < SIZE; k++)    xy[k] = x[k] * y[k];
+    for (size_t k = 0; k < SIZE; k++)    r2[k] = (x2[k] + y2[k]);
+    for (size_t k = 0; k < SIZE; k++) if (r2[k] <= r2max) cmp[k] = 1;
+    for (size_t k = 0; k < SIZE; k++) if (r2[k] > r2max)  color_flag[k] = 1;
+    mask = 0; 
+    for (size_t k = 0; k < SIZE; k++) mask |= (cmp[k] << k);
+    if (!mask) break;
+    for (size_t k = 0; k < SIZE; k++) n[k] = n[k] + (size_t)cmp[k];
+    for (size_t k = 0; k < SIZE; k++) x[k] = x2[k] - y2[k] + x_0_arr[k];
+    for (size_t k = 0; k < SIZE; k++) y[k] = 2 * xy[k]     + y_0;
+}  
+```
+
 3. Using vectorization & SIMD(AVX/AVX2):                        `DrawMandelbrot3()`
 
-**Example of vizualization:**
-
-<img src="https://github.com/khmelnitskiianton/AsmCx86/assets/142332024/2bead766-15ab-4ba9-95d9-27c5e62803d2" width=80%>
+```cpp
+//counting (x,y)
+__m256 x_0_arr = _mm256_add_ps (_mm256_set1_ps (x_0), _mm256_mul_ps (_76543210, _mm256_set1_ps (dx*(*scale))));
+__m256 y_0_arr =                                                    _mm256_set1_ps (y_0);
+__m256 x = x_0_arr; 
+__m256 y = y_0_arr;
+__m256i n = _mm256_setzero_si256();
+__m256 cmp = _mm256_setzero_ps();
+for (size_t m = 0; m < N_MAX; m++)
+{
+    __m256 x2 = _mm256_mul_ps (x, x);
+    __m256 y2 = _mm256_mul_ps (y, y);
+    __m256 xy = _mm256_mul_ps (x, y);
+    __m256 r2 = _mm256_add_ps (x2,y2);
+    cmp = _mm256_cmp_ps (r2, r2max, _CMP_LE_OS);
+    int mask = 0; 
+    mask = _mm256_movemask_ps (cmp);
+    if (!mask) break;
+    n = _mm256_sub_epi32 (n, _mm256_castps_si256(cmp)); 
+    x = _mm256_add_ps (_mm256_sub_ps(x2,y2), x_0_arr);
+    y = _mm256_add_ps (_mm256_add_ps(xy,xy), y_0_arr);
+} 
+```
 
 **Tests & Results:**
 
