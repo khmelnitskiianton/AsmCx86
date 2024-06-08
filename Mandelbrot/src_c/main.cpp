@@ -5,20 +5,23 @@
 #include <math.h>
 #include <emmintrin.h>
 #include <immintrin.h>
-#include <x86intrin.h>
+#include <x86intrin.h>  
 
-const char* font_path = "/usr/share/fonts/truetype/firacode/FiraCode-Bold.ttf";
+//=======================================================================================
+//Constants
+const char* font_path = "/usr/share/fonts/truetype/firacode/FiraCode-Bold.ttf"; //set path to your font of FPS
 
-const int SCREEN_WIDTH  = 1000;
-const int SCREEN_HEIGHT = 800;
-const size_t SIZE = 8;
-const size_t N_MAX      = 100;
-const float dx          = 1/400.f; 
-const float dy          = 1/400.f; 
-const float dscale      = 1.2f;   
-const float RADIUS      = 100;     
-const float X_SHIFT     = -0.55f;  
+const int SCREEN_WIDTH      = 1000;
+const int SCREEN_HEIGHT     = 800;
+const size_t SIZE           = 8;
+const size_t N_MAX          = 100;
+const float dx              = 1/400.f; 
+const float dy              = 1/400.f; 
+const float dscale          = 1.2f;   
+const float RADIUS          = 100;     
+const float X_SHIFT         = -0.55f;  
 const size_t SIZE_OF_BUFFER = 30;
+
 const unsigned long long clock_speed_spu = 3000000000;
 
 const __m256 r2max      = _mm256_set1_ps (RADIUS);
@@ -26,6 +29,8 @@ const __m256 _76543210  = _mm256_set_ps  (7.f, 6.f, 5.f, 4.f, 3.f, 2.f, 1.f, 0.f
 const __m256 nmax       = _mm256_set1_ps (N_MAX);
 
 int number_options = 3;
+//=======================================================================================
+
 
 int         sdl_ctor();
 int         sdl_dtor();
@@ -41,6 +46,8 @@ SDL_Event    event;
 SDL_Surface  *surfaceMessage = NULL;
 SDL_Surface  *windowSurface  = NULL;
 TTF_Font     *font = NULL; 
+
+//Main
 
 int main() {
     // Initialize SDL
@@ -60,7 +67,7 @@ int main() {
     SDL_Color colors[N_MAX+1] = {};
     SDL_Rect Message_rect;  //create a rect
     Message_rect.x = 0;     //controls the rect's x coordinate 
-    Message_rect.y = 0;     // controls the rect's y coordinte
+    Message_rect.y = 0;     //controls the rect's y coordinate
 
     CalcAllColors(colors);
 
@@ -78,8 +85,8 @@ int main() {
                 if (event.key.keysym.sym == SDLK_RIGHT)     x_center -= dx*scale;
                 if (event.key.keysym.sym == SDLK_LEFT)      x_center += dx*scale;
 
-                if (event.key.keysym.sym == SDLK_EQUALS)    scale /= dscale;
-                if (event.key.keysym.sym == SDLK_MINUS)     scale *= dscale;
+                if (event.key.keysym.sym == SDLK_KP_PLUS)   scale /= dscale;
+                if (event.key.keysym.sym == SDLK_KP_MINUS)  scale *= dscale;
 
                 if (event.key.keysym.sym == SDLK_1)         number_options = 1;
                 if (event.key.keysym.sym == SDLK_2)         number_options = 2;
@@ -196,7 +203,7 @@ void CleanBuffer(char* buff, size_t leng)
     }
 }
 
-
+//First naive version
 bool DrawMandelbrot1(float* x_center, float* y_center, float* scale, SDL_Color* colors)
 {
     float x_0 = 0;
@@ -249,6 +256,7 @@ bool DrawMandelbrot1(float* x_center, float* y_center, float* scale, SDL_Color* 
     return 1;
 }
 
+//Version with many loops
 bool DrawMandelbrot2(float* x_center, float* y_center, float* scale, SDL_Color* colors)
 {
     float x_0 = 0;
@@ -309,6 +317,7 @@ bool DrawMandelbrot2(float* x_center, float* y_center, float* scale, SDL_Color* 
     return 1;
 }
 
+//Optimized with AVX version
 bool DrawMandelbrot3(float* x_center, float* y_center, float* scale, SDL_Color* colors)
 {
     for (int y_i = 0; y_i < SCREEN_HEIGHT; y_i++)
